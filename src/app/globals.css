@@ -1,0 +1,12 @@
+:root {
+  --green-primary: #0f8a2d;
+  --green-dark: #0a6b22;
+  --green-light: #e9f7ef;
+  --green-accent: #1db954;
+}
+
+body {
+  background-color: #ffffff;
+  color: #1f2937;
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont;
+}
