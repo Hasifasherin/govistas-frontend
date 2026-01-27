@@ -3,8 +3,8 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import AuthCard from "../../components/AuthCard";
-import AuthInput from "../../components/AuthInput";
+import AuthCard from "../../components/auth/AuthCard";
+import AuthInput from "../../components/auth/AuthInput";
 import { useAuth } from "../../context/AuthContext";
 
 export default function AdminLoginPage() {
