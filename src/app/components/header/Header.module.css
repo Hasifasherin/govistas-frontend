@@ -1,0 +1,93 @@
+.header {
+  position: fixed;
+  top: 0;
+  width: 100%;
+  z-index: 1000;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+
+.iconBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.userBtn {
+  border: 1px solid #ddd;
+}
+
+.dropdown {
+  position: absolute;
+  top: 44px;
+  right: 0;
+  width: 220px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+  overflow: hidden;
+}
+
+.dropdownLeft {
+  left: 0;
+  right: auto;
+}
+
+.dropdownItem {
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #111;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.dropdownItem:hover {
+  background: #f9fafb;
+}
+
+.email {
+  padding: 12px 16px;
+  font-size: 13px;
+  color: #555;
+}
+
+.divider {
+  border-top: 1px solid #eee;
+}
+
+.discoverBtn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-size: 15px;
+}

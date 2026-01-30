@@ -1,4 +1,6 @@
 import Link from "next/link";
+import Header from "./components/header/Header";
+
 
 export default function Home() {
   return (
@@ -8,6 +10,7 @@ export default function Home() {
         background: "linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%)",
       }}
     >
+     
       {/* Logo / Brand */}
       <h1
         style={{

@@ -24,8 +24,8 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      await adminLogin(form.email, form.password);
-      router.push("/admin/dashboard");
+      const adminUser = await adminLogin(form.email, form.password);
+      router.push("/admin/dashboard"); 
     } catch (err: any) {
       setError(err.response?.data?.message || "Admin login failed. Try again.");
     } finally {
