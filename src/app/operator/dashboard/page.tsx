@@ -1,263 +1,190 @@
-// app/operator/dashboard/page.tsx - PROFESSIONAL WITH REAL DATA
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
 import { operatorAPI } from "../../../services/operator";
 import { OperatorStats, OperatorBooking } from "../../../types/operator";
 import styles from "../styles/OperatorDashboard.module.css";
+import { FiEye, FiCheck, FiX, FiCalendar, FiDollarSign, FiMap, FiUsers } from "react-icons/fi";
+import { Line, Bar, Doughnut } from "react-chartjs-2";
 import {
-  FiEye,
-  FiCheck,
-  FiX,
-  FiTrendingUp,
-  FiTrendingDown,
-  FiCalendar,
-  FiDollarSign,
-  FiMap,
-  FiUsers
-} from "react-icons/fi";
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  Title,
+  Tooltip,
+  Legend,
+  ArcElement,
+} from "chart.js";
+
+ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
 
 export default function OperatorDashboard() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [stats, setStats] = useState<OperatorStats | null>(null);
   const [recentBookings, setRecentBookings] = useState<OperatorBooking[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (!authLoading && user?.role === "operator") loadDashboard();
+  }, [authLoading, user]);
 
-  const fetchDashboardData = async () => {
+  const loadDashboard = async () => {
     try {
       setLoading(true);
-      
-      // Fetch stats from backend
       const statsData = await operatorAPI.getDashboardStats();
       setStats(statsData);
-      
-      // Fetch recent bookings
-      const bookingsResponse = await operatorAPI.getMyBookings();
-      if (bookingsResponse.success && bookingsResponse.bookings) {
-        setRecentBookings(bookingsResponse.bookings.slice(0, 5));
-      }
-    } catch (error) {
-      console.error("Error fetching dashboard data:", error);
+
+      const bookingsRes = await operatorAPI.getMyBookings();
+      if (bookingsRes.success) setRecentBookings(bookingsRes.bookings.slice(0, 5));
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleUpdateStatus = async (bookingId: string, status: 'accepted' | 'rejected') => {
+  const handleUpdateStatus = async (bookingId: string, status: "accepted" | "rejected") => {
     try {
       await operatorAPI.updateBookingStatus(bookingId, status);
-      fetchDashboardData(); // Refresh data
-    } catch (error) {
-      console.error("Error updating booking:", error);
+      setRecentBookings(prev => prev.map(b => (b._id === bookingId ? { ...b, status } : b)));
+    } catch (err) {
+      console.error(err);
     }
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0
-    }).format(amount);
+  const formatCurrency = (amount = 0) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
+
+  const formatDate = (date: string) =>
+    new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+
+  if (authLoading || loading)
+    return (
+      <div className="flex justify-center items-center min-h-[60vh]">
+        <div className="animate-spin h-10 w-10 border-b-2 border-green-600 rounded-full" />
+      </div>
+    );
+
+  if (!user || user.role !== "operator")
+    return <div className="text-center py-20 text-gray-600">Unauthorized access</div>;
+
+  // ================= CHART DATA =================
+  const revenueData = {
+    labels: stats?.monthlyRevenue?.map(m => m.month) || [],
+    datasets: [
+      { label: "Revenue", data: stats?.monthlyRevenue?.map(m => m.amount) || [], borderColor: "#22c55e", backgroundColor: "rgba(34,197,94,0.2)", tension: 0.3 },
+    ],
   };
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric'
-    });
+  const bookingsData = {
+    labels: stats?.monthlyBookings?.map(m => m.month) || [],
+    datasets: [{ label: "Bookings", data: stats?.monthlyBookings?.map(m => m.count) || [], backgroundColor: "rgba(59,130,246,0.7)" }],
   };
 
-  const getOperatorName = () => {
-    if (user?.firstName) {
-      return user.firstName;
-    }
-    return "Operator";
+  const categoriesData = {
+    labels: stats?.tourCategories?.map(c => c.category) || [],
+    datasets: [{ label: "Tours", data: stats?.tourCategories?.map(c => c.count) || [], backgroundColor: ["#10B981","#3B82F6","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#F43F5E"] }],
   };
 
   return (
     <div className={styles.dashboard}>
-      {/* WELCOME HEADER */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-800">Welcome back, {getOperatorName()}!</h1>
-        <p className="text-gray-600 mt-2">Here's what's happening with your business today.</p>
-      </div>
-
-      {/* STATS CARDS */}
+      {/* Stats Cards */}
       <div className={styles.statsGrid}>
-        <div className={styles.statCard}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={styles.statLabel}>Total Tours</p>
-              <p className={styles.statValue}>{stats?.totalTours || 0}</p>
-              <div className="flex items-center mt-2">
-                <FiTrendingUp className="text-green-500 mr-1" size={16} />
-                <span className="text-green-600 text-sm font-medium">Active</span>
-              </div>
-            </div>
-            <div className={`${styles.statIcon} ${styles.statIconTours}`}>
-              <FiMap size={24} />
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={styles.statLabel}>Total Bookings</p>
-              <p className={styles.statValue}>{stats?.totalBookings || 0}</p>
-              <div className="flex items-center mt-2">
-                <FiTrendingUp className="text-green-500 mr-1" size={16} />
-                <span className="text-green-600 text-sm font-medium">All time</span>
-              </div>
-            </div>
-            <div className={`${styles.statIcon} ${styles.statIconBookings}`}>
-              <FiCalendar size={24} />
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={styles.statLabel}>Pending Requests</p>
-              <p className={styles.statValue}>{stats?.pendingBookings || 0}</p>
-              <div className="flex items-center mt-2">
-                <span className="text-yellow-600 text-sm font-medium">Requires attention</span>
-              </div>
-            </div>
-            <div className={`${styles.statIcon} ${styles.statIconPending}`}>
-              <FiUsers size={24} />
-            </div>
-          </div>
-        </div>
-
-        <div className={styles.statCard}>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className={styles.statLabel}>Total Revenue</p>
-              <p className={styles.statValue}>{formatCurrency(stats?.totalRevenue || 0)}</p>
-              <div className="flex items-center mt-2">
-                <FiTrendingUp className="text-green-500 mr-1" size={16} />
-                <span className="text-green-600 text-sm font-medium">8% growth</span>
-              </div>
-            </div>
-            <div className={`${styles.statIcon} ${styles.statIconRevenue}`}>
-              <FiDollarSign size={24} />
-            </div>
-          </div>
-        </div>
+        <StatCard label="Total Tours" value={stats?.totalTours} icon={<FiMap />} />
+        <StatCard label="Total Bookings" value={stats?.totalBookings} icon={<FiCalendar />} />
+        <StatCard label="Pending Requests" value={stats?.pendingBookings} icon={<FiUsers />} highlight />
+        <StatCard label="Revenue" value={formatCurrency(stats?.totalRevenue)} icon={<FiDollarSign />} />
+        <StatCard label="Active Tours" value={stats?.activeTours} icon={<FiMap />} />
       </div>
 
-      {/* RECENT BOOKINGS TABLE */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 mt-8">
-        <div className="px-6 py-4 border-b border-gray-200">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold text-gray-800">Recent Booking Requests</h2>
-            <Link href="/operator/bookings" className="text-green-600 hover:text-green-700 font-medium text-sm">
-              View All →
-            </Link>
-          </div>
-        </div>
-
-        <div className="overflow-x-auto">
-          {loading ? (
-            <div className="py-12 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
-              <p className="mt-4 text-gray-500">Loading bookings...</p>
-            </div>
-          ) : recentBookings.length === 0 ? (
-            <div className="py-12 text-center">
-              <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <FiCalendar className="text-gray-400" size={24} />
-              </div>
-              <p className="text-gray-500">No booking requests yet</p>
-              <p className="text-gray-400 text-sm mt-1">Your booking requests will appear here</p>
-            </div>
-          ) : (
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tour</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Participants</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {recentBookings.map((booking) => (
-                  <tr key={booking._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="font-medium text-gray-900">{booking.tourId?.title || "Unknown Tour"}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div>
-                        <div className="font-medium text-gray-900">
-                          {booking.userId?.firstName} {booking.userId?.lastName}
-                        </div>
-                        <div className="text-sm text-gray-500">{booking.userId?.email}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-gray-900">{formatDate(booking.bookingDate)}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm font-medium">
-                        {booking.participants} people
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-                        booking.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                        booking.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                        'bg-red-100 text-red-800'
-                      }`}>
-                        {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {booking.status === 'pending' ? (
-                        <div className="flex space-x-2">
-                          <button
-                            onClick={() => handleUpdateStatus(booking._id, 'accepted')}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                          >
-                            <FiCheck className="mr-1" size={12} />
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleUpdateStatus(booking._id, 'rejected')}
-                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                          >
-                            <FiX className="mr-1" size={12} />
-                            Reject
-                          </button>
-                        </div>
-                      ) : (
-                        <Link
-                          href={`/operator/bookings/${booking._id}`}
-                          className="inline-flex items-center px-3 py-1.5 border border-gray-300 text-xs font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
-                        >
-                          <FiEye className="mr-1" size={12} />
-                          View
-                        </Link>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+      {/* Charts */}
+      <div className={styles.chartsGrid}>
+        <div className={styles.chartContainer}><h3 className={styles.chartTitle}>Revenue Overview</h3><Line data={revenueData} /></div>
+        <div className={styles.chartContainer}><h3 className={styles.chartTitle}>Monthly Bookings</h3><Bar data={bookingsData} /></div>
+        <div className={styles.chartContainer}><h3 className={styles.chartTitle}>Tour Categories</h3><Doughnut data={categoriesData} /></div>
       </div>
+
+      {/* Recent Bookings Table */}
+      <div className={styles.recentBookingsContainer}>
+  <div className={styles.recentBookingsHeader}>
+    <h2>Recent Booking Requests</h2>
+    <Link href="/operator/bookings">View all →</Link>
+  </div>
+
+  {recentBookings.length === 0 ? (
+    <div className={styles.recentBookingsEmpty}>
+      No booking requests yet
+    </div>
+  ) : (
+    <table className={styles.table}>
+      <thead>
+        <tr>
+          {["Tour", "Customer", "Date", "People", "Status", "Actions"].map(h => (
+            <th key={h}>{h}</th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {recentBookings.map(b => (
+          <tr key={b._id}>
+            <td>{b.tourId?.title}</td>
+            <td>
+              {b.userId?.firstName} {b.userId?.lastName}
+              <div className="text-sm text-gray-500">{b.userId?.email}</div>
+            </td>
+            <td>{formatDate(b.bookingDate)}</td>
+            <td>{b.participants}</td>
+            <td><StatusBadge status={b.status} /></td>
+            <td>
+              {b.status === "pending" ? (
+                <div className="flex gap-2">
+                  <ActionBtn label="Accept" color="green" icon={<FiCheck />} onClick={() => handleUpdateStatus(b._id, "accepted")} />
+                  <ActionBtn label="Reject" color="red" icon={<FiX />} onClick={() => handleUpdateStatus(b._id, "rejected")} />
+                </div>
+              ) : (
+                <Link href={`/operator/bookings/${b._id}`} className="text-sm text-gray-700 inline-flex items-center">
+                  <FiEye className="mr-1" /> View
+                </Link>
+              )}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )}
+</div>
+
     </div>
   );
 }
+
+/* ================= SMALL UI COMPONENTS ================= */
+const StatCard = ({ label, value, icon, highlight }: any) => (
+  <div className={`${styles.statCard} ${highlight ? "border-l-4 border-red-500" : ""}`}>
+    <div className="flex justify-between items-center">
+      <div>
+        <p className={styles.statLabel}>{label}</p>
+        <p className={styles.statValue}>{value ?? 0}</p>
+        {highlight && <p className={styles.statHighlight}>Needs attention</p>}
+      </div>
+      <div className={styles.statIcon}>{icon}</div>
+    </div>
+  </div>
+);
+
+const StatusBadge = ({ status }: { status: string }) => (
+  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${status === "pending" ? "bg-yellow-100 text-yellow-800" : status === "accepted" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
+    {status.toUpperCase()}
+  </span>
+);
+
+const ActionBtn = ({ label, color, icon, onClick }: any) => (
+  <button onClick={onClick} className={`flex items-center px-3 py-1 text-sm font-medium rounded-md ${color === "green" ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-red-100 text-red-800 hover:bg-red-200"}`}>
+    {icon} <span className="ml-1">{label}</span>
+  </button>
+);

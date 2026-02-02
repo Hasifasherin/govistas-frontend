@@ -1,4 +1,3 @@
-// types/tour.ts
 export interface Tour {
   _id: string;
   title: string;
@@ -7,6 +6,7 @@ export interface Tour {
   location: string;
   duration: number;
   maxGroupSize: number;
+  category: string;
   availableDates: string[];
   image: string;
   createdBy: {
@@ -24,7 +24,6 @@ export interface Tour {
   updatedAt: string;
 }
 
-// types/operator.ts - UPDATE THIS
 export interface OperatorTour extends Tour {
   bookingsCount: number;
 }

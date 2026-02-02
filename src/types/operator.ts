@@ -1,14 +1,14 @@
-// types/operator.ts - COMPLETE VERSION
 export interface OperatorTour {
   _id: string;
   title: string;
-  description: string; // ADD THIS
+  description: string;
   image: string;
   location: string;
   price: number;
-  duration: number; // ADD THIS
-  maxGroupSize: number; // ADD THIS
-  availableDates: string[]; // ADD THIS
+  duration: number;
+  maxGroupSize: number;
+  category: string;
+  availableDates: string[];
   status: 'pending' | 'approved' | 'rejected';
   isActive: boolean;
   bookingsCount: number;
@@ -46,4 +46,9 @@ export interface OperatorStats {
   totalBookings: number;
   pendingBookings: number;
   totalRevenue: number;
+  activeTours: number;
+  cancelledBookings?: number;
+  monthlyRevenue: { month: string; amount: number }[];
+  monthlyBookings: { month: string; count: number }[];
+  tourCategories: { category: string; count: number }[];
 }

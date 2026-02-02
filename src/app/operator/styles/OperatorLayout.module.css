@@ -290,6 +290,45 @@
   border-radius: 50%;
   animation: pulse 2s infinite;
 }
+/* Notification Dropdown */
+.notificationDropdown {
+  position: absolute;
+  top: 2.5rem; /* right below the bell */
+  right: 0;
+  width: 280px;
+  max-height: 400px;
+  background: white;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  z-index: 60;
+  overflow-y: auto;
+  padding: 0.5rem 0;
+}
+
+.notificationHeader {
+  font-weight: 600;
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.notificationItem {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+  color: #111827;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.notificationItem:hover {
+  background-color: #f3f4f6;
+}
+
+.notificationItem.unread {
+  background-color: #e9f7ef;
+  font-weight: 600;
+}
 
 .quickStats {
   display: flex;

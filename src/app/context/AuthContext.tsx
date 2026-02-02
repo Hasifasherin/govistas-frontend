@@ -14,6 +14,9 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<User>;
   adminLogin: (email: string, password: string) => Promise<User>;
   logout: () => void;
+  isProfileComplete: boolean;
+  isActive: boolean;
+  isBlocked: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -30,7 +33,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const dispatch = useAppDispatch();
 
-  // Load user from localStorage on initial render
   useEffect(() => {
     const loadUser = () => {
       try {
@@ -41,13 +43,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           setToken(storedToken);
           setUser(JSON.parse(storedUser));
           
-          // If admin token exists, set in Redux
           if (localStorage.getItem("adminToken")) {
             dispatch(setAdminUser(JSON.parse(storedUser)));
           }
         }
       } catch (error) {
         console.error("Error loading user from storage:", error);
+        localStorage.clear(); // Clear corrupted data
       } finally {
         setLoading(false);
       }
@@ -57,54 +59,82 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [dispatch]);
 
   const register = async (data: any) => {
-    const res = await axios.post("/auth/register", data);
-    const userData = {
-      _id: res.data.user._id,
-      firstName: res.data.user.firstName,
-      lastName: res.data.user.lastName,
-      email: res.data.user.email,
-      role: res.data.user.role,
-    };
-    
-    setUser(userData);
-    setToken(res.data.token);
-    localStorage.setItem("token", res.data.token);
-    localStorage.setItem("user", JSON.stringify(userData));
+    try {
+      const res = await axios.post("/auth/register", data);
+      if (!res.data.user || !res.data.token) {
+        throw new Error("Invalid response from server");
+      }
+      
+      const userData: User = {
+        _id: res.data.user._id,
+        firstName: res.data.user.firstName,
+        lastName: res.data.user.lastName,
+        email: res.data.user.email,
+        role: res.data.user.role || "user",
+      };
+      
+      setUser(userData);
+      setToken(res.data.token);
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(userData));
+    } catch (error: any) {
+      console.error("Registration error:", error);
+      throw error;
+    }
   };
 
   const login = async (email: string, password: string): Promise<User> => {
-    const res = await axios.post("/auth/login", { email, password });
-    const loggedInUser: User = {
-      _id: res.data.user._id,
-      firstName: res.data.user.firstName,
-      lastName: res.data.user.lastName,
-      email: res.data.user.email,
-      role: res.data.user.role,
-    };
-    
-    setUser(loggedInUser);
-    setToken(res.data.token);
-    localStorage.setItem("token", res.data.token);
-    localStorage.setItem("user", JSON.stringify(loggedInUser));
-    return loggedInUser;
+    try {
+      const res = await axios.post("/auth/login", { email, password });
+      if (!res.data.user || !res.data.token) {
+        throw new Error("Invalid response from server");
+      }
+      
+      const loggedInUser: User = {
+        _id: res.data.user._id,
+        firstName: res.data.user.firstName,
+        lastName: res.data.user.lastName,
+        email: res.data.user.email,
+        role: res.data.user.role || "user",
+      };
+      
+      setUser(loggedInUser);
+      setToken(res.data.token);
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(loggedInUser));
+      return loggedInUser;
+    } catch (error: any) {
+      console.error("Login error:", error);
+      throw error;
+    }
   };
 
   const adminLogin = async (email: string, password: string): Promise<User> => {
-    const res = await axios.post("/admin/login", { email, password });
-    const adminUser: User = {
-      _id: "admin-id",
-      firstName: "Admin",
-      lastName: "User",
-      email: res.data.user.email || email,
-      role: "admin",
-    };
-    
-    setUser(adminUser);
-    setToken(res.data.token);
-    dispatch(setAdminUser(adminUser));
-    localStorage.setItem("adminToken", res.data.token);
-    localStorage.setItem("user", JSON.stringify(adminUser));
-    return adminUser;
+    try {
+      const res = await axios.post("/admin/login", { email, password });
+      if (!res.data.token) {
+        throw new Error("No token received from admin login");
+      }
+      
+      // Backend returns: { success: true, token } NOT { user, token }
+      const adminUser: User = {
+        _id: "admin-id",
+        firstName: "Admin",
+        lastName: "User",
+        email: email, // Use email from request since backend doesn't return user object
+        role: "admin",
+      };
+      
+      setUser(adminUser);
+      setToken(res.data.token);
+      dispatch(setAdminUser(adminUser));
+      localStorage.setItem("adminToken", res.data.token);
+      localStorage.setItem("user", JSON.stringify(adminUser));
+      return adminUser;
+    } catch (error: any) {
+      console.error("Admin login error:", error);
+      throw error;
+    }
   };
 
   const logout = () => {
@@ -115,7 +145,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     localStorage.removeItem("user");
     dispatch(adminLogout());
     
-    // Redirect to home page
     if (typeof window !== "undefined") {
       window.location.href = "/";
     }
@@ -129,7 +158,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       register, 
       login, 
       adminLogin, 
-      logout 
+      logout,
+       isProfileComplete: !!user?.firstName && !!user?.lastName && !!user?.email,
+    isActive: user?.role !== "user",
+    isBlocked: false,
     }}>
       {children}
     </AuthContext.Provider>

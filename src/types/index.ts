@@ -1,4 +1,3 @@
-// Base User Interface
 export interface User {
   _id: string;
   firstName: string;
@@ -7,27 +6,27 @@ export interface User {
   phone: string;
   gender: "male" | "female";
   dob: string;
-  password?: string; // Only for forms, not from API
+  password?: string;
   role: "user" | "operator" | "admin";
-  wishlist?: string[]; // Array of tour IDs
+  wishlist?: string[];
   isBlocked?: boolean;
   isApproved?: boolean;
   createdAt: string;
   updatedAt: string;
 }
 
-// Tour Interface (from your backend Tour model)
 export interface Tour {
   _id: string;
   title: string;
   description: string;
   price: number;
   location: string;
-  duration: number; // in hours
+  duration: number;
   maxGroupSize: number;
+  category: "adventure" | "cultural" | "nature" | "food" | "historical" | "sports" | "relaxation";
   availableDates: string[];
   image: string;
-  createdBy: string | User; // Can be ID or populated user
+  createdBy: string | User;
   averageRating: number;
   reviewsCount: number;
   status: "pending" | "approved" | "rejected";
@@ -37,7 +36,6 @@ export interface Tour {
   updatedAt: string;
 }
 
-// Booking Interface (from your backend Booking model)
 export interface Booking {
   _id: string;
   tourId: string | Tour;
@@ -49,18 +47,6 @@ export interface Booking {
   updatedAt: string;
 }
 
-// Review Interface
-export interface Review {
-  _id: string;
-  tourId: string | Tour;
-  userId: string | User;
-  rating: number;
-  comment: string;
-  createdAt: string;
-  updatedAt: string;
-}
-
-// Notification Interface
 export interface Notification {
   _id: string;
   user: string | User;
@@ -71,17 +57,6 @@ export interface Notification {
   createdAt: string;
 }
 
-// Message Interface
-export interface Message {
-  _id: string;
-  sender: string | User;
-  receiver: string | User;
-  message: string;
-  read: boolean;
-  createdAt: string;
-}
-
-// API Response Types
 export interface ApiResponse<T = any> {
   success: boolean;
   message?: string;
@@ -91,7 +66,6 @@ export interface ApiResponse<T = any> {
   total?: number;
 }
 
-// Operator Specific Types
 export interface OperatorStats {
   totalTours: number;
   totalBookings: number;
@@ -99,40 +73,4 @@ export interface OperatorStats {
   totalRevenue: number;
   activeTours: number;
   cancelledBookings: number;
-}
-
-// Form Types
-export interface TourFormData {
-  title: string;
-  description: string;
-  price: number;
-  location: string;
-  duration: number;
-  maxGroupSize: number;
-  availableDates: string[];
-  image: File | string;
-}
-
-export interface BookingStatusUpdate {
-  status: "accepted" | "rejected";
-}
-
-// Auth Types
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface RegisterCredentials extends LoginCredentials {
-  firstName: string;
-  lastName: string;
-  phone: string;
-  gender: "male" | "female";
-  dob: string;
-  role?: "user" | "operator";
-}
-
-// Payment Types
-export interface PaymentIntent {
-  clientSecret: string;
 }
