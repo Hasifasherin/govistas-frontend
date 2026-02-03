@@ -26,10 +26,10 @@ export default function LoginPage() {
     try {
       const user = await login(form.email, form.password);
 
-      // ✅ Redirect based on role safely
+      //  Redirect based on role safely
       switch (user.role) {
         case "user":
-          router.push("/user/dashboard");
+          router.push("/");
           break;
         case "operator":
           router.push("/operator/dashboard");
