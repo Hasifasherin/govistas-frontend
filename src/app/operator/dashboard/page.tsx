@@ -36,11 +36,15 @@ export default function OperatorDashboard() {
   const loadDashboard = async () => {
     try {
       setLoading(true);
-      const statsData = await operatorAPI.getDashboardStats();
-      setStats(statsData);
 
+      // ✅ Fetch stats from backend
+      const statsRes = await operatorAPI.getDashboardStats();
+      if (statsRes.success) setStats(statsRes.stats);
+
+      // ✅ Fetch recent bookings
       const bookingsRes = await operatorAPI.getMyBookings();
       if (bookingsRes.success) setRecentBookings(bookingsRes.bookings.slice(0, 5));
+
     } catch (err) {
       console.error(err);
     } finally {
@@ -111,54 +115,51 @@ export default function OperatorDashboard() {
 
       {/* Recent Bookings Table */}
       <div className={styles.recentBookingsContainer}>
-  <div className={styles.recentBookingsHeader}>
-    <h2>Recent Booking Requests</h2>
-    <Link href="/operator/bookings">View all →</Link>
-  </div>
+        <div className={styles.recentBookingsHeader}>
+          <h2>Recent Booking Requests</h2>
+          <Link href="/operator/bookings">View all →</Link>
+        </div>
 
-  {recentBookings.length === 0 ? (
-    <div className={styles.recentBookingsEmpty}>
-      No booking requests yet
-    </div>
-  ) : (
-    <table className={styles.table}>
-      <thead>
-        <tr>
-          {["Tour", "Customer", "Date", "People", "Status", "Actions"].map(h => (
-            <th key={h}>{h}</th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {recentBookings.map(b => (
-          <tr key={b._id}>
-            <td>{b.tourId?.title}</td>
-            <td>
-              {b.userId?.firstName} {b.userId?.lastName}
-              <div className="text-sm text-gray-500">{b.userId?.email}</div>
-            </td>
-            <td>{formatDate(b.bookingDate)}</td>
-            <td>{b.participants}</td>
-            <td><StatusBadge status={b.status} /></td>
-            <td>
-              {b.status === "pending" ? (
-                <div className="flex gap-2">
-                  <ActionBtn label="Accept" color="green" icon={<FiCheck />} onClick={() => handleUpdateStatus(b._id, "accepted")} />
-                  <ActionBtn label="Reject" color="red" icon={<FiX />} onClick={() => handleUpdateStatus(b._id, "rejected")} />
-                </div>
-              ) : (
-                <Link href={`/operator/bookings/${b._id}`} className="text-sm text-gray-700 inline-flex items-center">
-                  <FiEye className="mr-1" /> View
-                </Link>
-              )}
-            </td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  )}
-</div>
-
+        {recentBookings.length === 0 ? (
+          <div className={styles.recentBookingsEmpty}>No booking requests yet</div>
+        ) : (
+          <table className={styles.table}>
+            <thead>
+              <tr>
+                {["Tour", "Customer", "Date", "People", "Status", "Actions"].map(h => (
+                  <th key={h}>{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {recentBookings.map(b => (
+                <tr key={b._id}>
+                  <td>{b.tourId?.title}</td>
+                  <td>
+                    {b.userId?.firstName} {b.userId?.lastName}
+                    <div className="text-sm text-gray-500">{b.userId?.email}</div>
+                  </td>
+                  <td>{formatDate(b.bookingDate)}</td>
+                  <td>{b.participants}</td>
+                  <td><StatusBadge status={b.status} /></td>
+                  <td>
+                    {b.status === "pending" ? (
+                      <div className="flex gap-2">
+                        <ActionBtn label="Accept" color="green" icon={<FiCheck />} onClick={() => handleUpdateStatus(b._id, "accepted")} />
+                        <ActionBtn label="Reject" color="red" icon={<FiX />} onClick={() => handleUpdateStatus(b._id, "rejected")} />
+                      </div>
+                    ) : (
+                      <Link href={`/operator/bookings/${b._id}`} className="text-sm text-gray-700 inline-flex items-center">
+                        <FiEye className="mr-1" /> View
+                      </Link>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 }

@@ -9,14 +9,16 @@ import TourCard from "../../components/tour/TourCard";
 import AddTourForm from "../../components/tour/AddTourForm";
 import { FiAlertCircle, FiFolderPlus } from "react-icons/fi";
 
-export default function MyToursPage() {
+export default function OperatorToursPage() {
   const router = useRouter();
   const [tours, setTours] = useState<OperatorTour[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
   const [showForm, setShowForm] = useState(false);
+  const [editingTour, setEditingTour] = useState<OperatorTour | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  /* ---------------- FETCH TOURS ---------------- */
   useEffect(() => {
     fetchTours();
   }, []);
@@ -32,32 +34,45 @@ export default function MyToursPage() {
         setError("Failed to load tours. Please try again.");
       }
     } catch (err: any) {
-      setError(err.message || "Failed to load tours. Please check your connection.");
+      setError(err.message || "Failed to load tours. Check your connection.");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleViewTour = (id: string) => router.push(`/tours/${id}`);
-  const handleEditTour = (id: string) => router.push(`/operator/tours/${id}/edit`);
-  
+  /* ---------------- CREATE / EDIT ---------------- */
+  const handleAddTourClick = () => {
+    setEditingTour(null);
+    setShowForm(true);
+  };
+
+  const handleTourAdded = async () => {
+    setShowForm(false);
+    await fetchTours();
+  };
+
+  const handleEditTour = (tour: OperatorTour) => {
+    setEditingTour(tour);
+    setShowForm(true);
+  };
+
+  /* ---------------- DELETE ---------------- */
   const handleDeleteTour = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this tour? This action cannot be undone.")) {
-      return;
-    }
-    
+    if (!window.confirm("Are you sure you want to delete this tour?")) return;
+
     try {
       const res = await operatorAPI.deleteTour(id);
       if (res.success) {
         setTours(tours.filter((t) => t._id !== id));
       } else {
-        setError("Failed to delete tour. Please try again.");
+        setError("Failed to delete tour. Try again.");
       }
     } catch (err: any) {
       setError(err.message || "Failed to delete tour.");
     }
   };
 
+  /* ---------------- FILTER TOURS ---------------- */
   const filteredTours = tours.filter((tour) => {
     if (filter === "all") return true;
     if (filter === "active") return tour.isActive && tour.status === "approved";
@@ -66,23 +81,27 @@ export default function MyToursPage() {
     return true;
   });
 
+  /* ---------------- RENDER ---------------- */
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
         <TourTopBar
           filter={filter}
           setFilter={setFilter}
-          onAddTourClick={() => setShowForm(true)}
+          onAddTourClick={handleAddTourClick}
         />
 
+        {/* ADD / EDIT FORM */}
         {showForm && (
           <AddTourForm
             onClose={() => setShowForm(false)}
-            onTourAdded={fetchTours}
+            onTourAdded={handleTourAdded}
+            // @ts-ignore
+            editingTour={editingTour}
           />
         )}
 
-        {/* Error Message */}
+        {/* ERROR MESSAGE */}
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-2xl">
             <div className="flex items-center gap-3">
@@ -92,16 +111,12 @@ export default function MyToursPage() {
           </div>
         )}
 
-        {/* Tours Grid */}
+        {/* LOADING */}
         {loading ? (
-          <div className="py-20">
-            <div className="flex flex-col items-center justify-center gap-4">
-              <div className="relative">
-                <div className="w-16 h-16 border-4 border-[var(--green-light)] 
-                  border-t-[var(--green-primary)] rounded-full animate-spin" />
-              </div>
-              <p className="text-gray-600 font-inter">Loading your tours...</p>
-            </div>
+          <div className="py-20 flex flex-col items-center justify-center gap-4">
+            <div className="w-16 h-16 border-4 border-[var(--green-light)] 
+              border-t-[var(--green-primary)] rounded-full animate-spin" />
+            <p className="text-gray-600 font-inter">Loading your tours...</p>
           </div>
         ) : filteredTours.length === 0 ? (
           <div className="text-center py-16 px-4">
@@ -114,14 +129,13 @@ export default function MyToursPage() {
                 No tours found
               </h3>
               <p className="text-gray-600 mb-8 font-inter">
-                {filter === "all" 
+                {filter === "all"
                   ? "You haven't created any tours yet. Get started by creating your first tour!"
-                  : `No tours match the "${filter}" filter. Try a different filter.`
-                }
+                  : `No tours match the "${filter}" filter.`}
               </p>
               {filter === "all" && (
                 <button
-                  onClick={() => setShowForm(true)}
+                  onClick={handleAddTourClick}
                   className="px-6 py-3 bg-gradient-to-r from-[var(--green-primary)] 
                     to-[var(--green-accent)] text-white font-semibold rounded-xl
                     hover:from-[var(--green-dark)] hover:to-[var(--green-primary)]
@@ -134,7 +148,7 @@ export default function MyToursPage() {
           </div>
         ) : (
           <>
-            {/* Stats Bar */}
+            {/* STATS */}
             <div className="mb-6 flex items-center justify-between">
               <p className="text-sm text-gray-600 font-inter">
                 Showing <span className="font-semibold">{filteredTours.length}</span> tours
@@ -144,15 +158,15 @@ export default function MyToursPage() {
               </p>
             </div>
 
-            {/* Tours Grid */}
+            {/* TOUR GRID */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {filteredTours.map((tour) => (
                 <TourCard
                   key={tour._id}
                   tour={tour}
-                  onView={handleViewTour}
-                  onEdit={handleEditTour}
-                  onDelete={handleDeleteTour}
+                  onView={() => router.push(`/tours/${tour._id}`)}
+                  onEdit={() => handleEditTour(tour)}
+                  onDelete={() => handleDeleteTour(tour._id)}
                 />
               ))}
             </div>

@@ -10,16 +10,21 @@ import { useAuth } from "../../context/AuthContext";
 const HomeSlider = () => {
   const [sliders, setSliders] = useState<Slider[]>([]);
   const [current, setCurrent] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const { user } = useAuth(); // get logged-in user
+  const { user } = useAuth();
 
+  // Fetch sliders
   useEffect(() => {
     const fetchSliders = async () => {
       try {
-        const sliders = await getSliders();
-        setSliders(sliders);
+        const data = await getSliders();
+        setSliders(Array.isArray(data) ? data : []);
       } catch (error) {
         console.error("Failed to load sliders", error);
+        setSliders([]);
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -29,17 +34,19 @@ const HomeSlider = () => {
   // Auto-slide
   useEffect(() => {
     if (!sliders.length) return;
+
     const interval = setInterval(() => {
       setCurrent((prev) => (prev + 1) % sliders.length);
     }, 5000);
+
     return () => clearInterval(interval);
   }, [sliders]);
 
-  if (!sliders.length) return null;
+  if (loading || !sliders.length) return null;
 
   return (
     <div className="relative w-full h-[90vh] md:h-[80vh] overflow-hidden">
-      {/* Slider images */}
+      {/* Slides */}
       {sliders.map((slide, index) => (
         <div
           key={slide._id}
@@ -57,12 +64,11 @@ const HomeSlider = () => {
         </div>
       ))}
 
-      {/* Dark overlay for contrast */}
+      {/* Overlay */}
       <div className="absolute inset-0 bg-black/40 z-10" />
 
-      {/* Hero Search + Greeting */}
+      {/* Content */}
       <div className="absolute inset-0 z-20 flex flex-col items-center justify-center px-4 text-center text-white">
-        {/* Conditional greeting */}
         {user?.firstName ? (
           <h1 className="text-3xl md:text-5xl font-bold mb-6">
             Hi {user.firstName}!
@@ -77,8 +83,23 @@ const HomeSlider = () => {
           Book tours, activities, and adventures with trusted providers.
         </p>
 
-        {/* Search + filters */}
         <HeroSearch />
+      </div>
+
+      {/* 🔘 DOT INDICATORS */}
+      <div className="absolute bottom-6 left-1/2 z-30 flex -translate-x-1/2 gap-2">
+        {sliders.map((_, index) => (
+          <button
+            key={index}
+            onClick={() => setCurrent(index)}
+            className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${
+              index === current
+                ? "bg-white scale-125"
+                : "bg-white/50 hover:bg-white"
+            }`}
+            aria-label={`Go to slide ${index + 1}`}
+          />
+        ))}
       </div>
     </div>
   );

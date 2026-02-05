@@ -25,7 +25,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   /* ================= ADMIN GUARD ================= */
   useEffect(() => {
     if (mounted && (!user || user.role !== "admin")) {
-      router.replace("/admin/login");
+      router.replace("/");
     }
   }, [mounted, user, router]);
 
@@ -34,7 +34,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   /* ================= COMPLETE LOGOUT ================= */
   const handleLogout = () => {
     dispatch(logout());
-    router.replace("/admin/login");
+    router.replace("/");
   };
 
   /* ================= MENU ITEMS ================= */
@@ -44,7 +44,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { label: "Operators", href: "/admin/operators" },
     { label: "Tours", href: "/admin/tours" },
     { label: "Bookings", href: "/admin/bookings" },
-    { label: "Calendar", href: "/admin/calendar" },
+    { label: "Slider", href: "/admin/sliders" },
+    { label: "Categories", href: "/admin/categories" },
     { label: "Upcoming Trips", href: "/admin/upcoming-trips" },
   ];
 

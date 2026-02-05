@@ -6,6 +6,8 @@ export interface User {
   name?: string;
   email: string;
   role?: "user" | "operator" | "admin";
+  isBlocked?: boolean;
+   isApproved?: boolean;
   phone?: string;
   gender?: "male" | "female";
   dob?: string;
