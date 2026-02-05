@@ -23,6 +23,14 @@ export interface Tour {
   createdAt: string;
   updatedAt: string;
 }
+// in types/tour.ts
+export interface TourFilters {
+  title?: string;
+  location?: string;
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
 
 export interface OperatorTour extends Tour {
   bookingsCount: number;
