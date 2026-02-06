@@ -33,21 +33,26 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   /* ================= COMPLETE LOGOUT ================= */
   const handleLogout = () => {
-    dispatch(logout());
-    router.replace("/admin/login");
-  };
+  dispatch(logout());
+
+  localStorage.removeItem("adminToken");
+  sessionStorage.clear();
+
+  window.location.href = "/";   
+};
+
 
   /* ================= MENU ITEMS ================= */
   const menuItems = [
     { label: "Dashboard", href: "/admin/dashboard" },
-    { label: "Users", href: "/admin/users" },
-    { label: "Operators", href: "/admin/operators" },
     { label: "Tours", href: "/admin/tours" },
     { label: "Bookings", href: "/admin/bookings" },
     { label: "Slider", href: "/admin/sliders" },
     { label: "Categories", href: "/admin/categories" },
     { label: "Chat", href: "/admin/chat" },
-    { label: "Upcoming Trips", href: "/admin/upcoming-trips" },
+    { label: "Users", href: "/admin/users" },
+    { label: "Operators", href: "/admin/operators" },
+    { label: "Reviews", href: "/admin/reviews" },
   ];
 
   return (
@@ -64,9 +69,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
               <Link
                 key={item.label}
                 href={item.href}
-                className={`block px-4 py-2 rounded transition hover:bg-green-600 ${
-                  pathname === item.href ? "bg-green-600" : ""
-                }`}
+                className={`block px-4 py-2 rounded transition hover:bg-green-600 ${pathname === item.href ? "bg-green-600" : ""
+                  }`}
               >
                 {item.label}
               </Link>

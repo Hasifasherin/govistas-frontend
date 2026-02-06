@@ -2,15 +2,24 @@
 
 import { useEffect, useState } from "react";
 import { Slider } from "../../../types/slider";
-import { getSliders, createSlider, deleteSlider } from "../../../services/slider";
+import {
+  getSliders,
+  createSlider,
+  deleteSlider,
+} from "../../../services/slider";
 import SlidersGrid from "./SlidersGrid";
 import SliderPreviewPanel from "./SliderPreviewPanel";
+import ConfirmationModal from "../../components/common/ConfirmationModal";
 
 export default function AdminSlidersManager() {
   const [sliders, setSliders] = useState<Slider[]>([]);
   const [loading, setLoading] = useState(false);
   const [activeSlide, setActiveSlide] = useState<Slider | null>(null);
 
+  /* ================= DELETE MODAL STATE ================= */
+  const [deleteId, setDeleteId] = useState<string | null>(null);
+
+  /* ================= FETCH ================= */
   const fetchSliders = async () => {
     setLoading(true);
     try {
@@ -28,6 +37,7 @@ export default function AdminSlidersManager() {
     fetchSliders();
   }, []);
 
+  /* ================= ADD ================= */
   const handleAdd = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files?.[0]) return;
 
@@ -48,30 +58,49 @@ export default function AdminSlidersManager() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm("Delete this slider?")) return;
+  /* ================= OPEN MODAL ================= */
+  const openDeleteModal = (id: string) => {
+    setDeleteId(id);
+  };
+
+  /* ================= CLOSE MODAL ================= */
+  const closeDeleteModal = () => {
+    setDeleteId(null);
+  };
+
+  /* ================= CONFIRM DELETE ================= */
+  const confirmDelete = async () => {
+    if (!deleteId) return;
 
     try {
       setLoading(true);
-      await deleteSlider(id);
-      if (activeSlide?._id === id) setActiveSlide(null);
+      await deleteSlider(deleteId);
+
+      if (activeSlide?._id === deleteId) {
+        setActiveSlide(null);
+      }
+
       await fetchSliders();
     } catch (err) {
       console.error(err);
       alert("Failed to delete slider");
     } finally {
       setLoading(false);
+      closeDeleteModal();
     }
   };
 
+  /* ================= UI ================= */
   return (
     <div className="space-y-6">
       <SlidersGrid
         sliders={sliders}
         loading={loading}
         onSelect={setActiveSlide}
-        onDelete={handleDelete}
-        onAdd={() => document.getElementById("add-slider-input")?.click()}
+        onDelete={openDeleteModal}
+        onAdd={() =>
+          document.getElementById("add-slider-input")?.click()
+        }
         selectedSlide={activeSlide}
       />
 
@@ -84,6 +113,15 @@ export default function AdminSlidersManager() {
       />
 
       {activeSlide && <SliderPreviewPanel slide={activeSlide} />}
+
+      {/* ================= COMMON CONFIRMATION MODAL ================= */}
+      <ConfirmationModal
+        title="Delete Slider"
+        description="Are you sure you want to delete this slider?"
+        isOpen={!!deleteId}
+        onConfirm={confirmDelete}
+        onCancel={closeDeleteModal}
+      />
     </div>
   );
 }

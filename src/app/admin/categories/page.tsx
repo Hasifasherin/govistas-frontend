@@ -11,6 +11,7 @@ import {
 } from "../../../services/categoryService";
 import CategoryForm from "./CategoryForm";
 import CategoryTable from "./CategoryTable";
+import ConfirmationModal from "../../components/common/ConfirmationModal"; // ✅ IMPORT ADDED
 
 const AdminCategoriesPage = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -19,7 +20,8 @@ const AdminCategoriesPage = () => {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [showForm, setShowForm] = useState<boolean>(false);
 
-  const [categoryToDelete, setCategoryToDelete] = useState<Category | null>(null);
+  const [categoryToDelete, setCategoryToDelete] =
+    useState<Category | null>(null);
 
   // Fetch categories
   const fetchCategories = async () => {
@@ -43,12 +45,21 @@ const AdminCategoriesPage = () => {
   const handleSaveCategory = async (name: string) => {
     try {
       if (editingCategory) {
-        const updated = await updateCategory(editingCategory._id, { name });
-        setCategories(categories.map(cat => (cat._id === updated._id ? updated : cat)));
+        const updated = await updateCategory(
+          editingCategory._id,
+          { name }
+        );
+
+        setCategories(
+          categories.map(cat =>
+            cat._id === updated._id ? updated : cat
+          )
+        );
       } else {
         const newCat = await createCategory(name);
         setCategories([newCat, ...categories]);
       }
+
       setShowForm(false);
       setEditingCategory(null);
     } catch (err: any) {
@@ -56,14 +67,25 @@ const AdminCategoriesPage = () => {
     }
   };
 
-  // Delete handlers
-  const handleDeleteClick = (category: Category) => setCategoryToDelete(category);
-  const cancelDelete = () => setCategoryToDelete(null);
+  // ---------------- DELETE ----------------
+
+  const handleDeleteClick = (category: Category) =>
+    setCategoryToDelete(category);
+
+  const cancelDelete = () =>
+    setCategoryToDelete(null);
+
   const confirmDelete = async () => {
     if (!categoryToDelete) return;
+
     try {
       await deleteCategory(categoryToDelete._id);
-      setCategories(categories.filter(cat => cat._id !== categoryToDelete._id));
+
+      setCategories(
+        categories.filter(
+          cat => cat._id !== categoryToDelete._id
+        )
+      );
     } catch (err: any) {
       setError(err?.message || "Failed to delete category");
     } finally {
@@ -80,9 +102,15 @@ const AdminCategoriesPage = () => {
   return (
     <AdminLayout>
       <div className="p-6 space-y-6 relative">
-        <h1 className="text-2xl font-bold">Categories</h1>
+        <h1 className="text-2xl font-bold">
+          Categories
+        </h1>
 
-        {error && <p className="text-red-500 bg-red-100 p-2 rounded">{error}</p>}
+        {error && (
+          <p className="text-red-500 bg-red-100 p-2 rounded">
+            {error}
+          </p>
+        )}
 
         {/* Add / Edit Form */}
         {showForm && (
@@ -106,29 +134,18 @@ const AdminCategoriesPage = () => {
           </button>
         )}
 
-        {/* Delete Confirmation Box above table */}
-        {categoryToDelete && (
-          <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-full bg-white border border-gray-300 rounded-lg shadow-md p-4 w-96 z-10">
-            <h2 className="text-lg font-bold mb-2">Confirm Delete</h2>
-            <p className="mb-4">
-              Are you sure you want to delete <strong>{categoryToDelete.name}</strong>?
-            </p>
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={cancelDelete}
-                className="px-4 py-2 rounded bg-gray-300 hover:bg-gray-400 transition"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={confirmDelete}
-                className="px-4 py-2 rounded bg-green-500 text-white hover:bg-green-600 transition"
-              >
-                Confirm
-              </button>
-            </div>
-          </div>
-        )}
+        {/* ✅ COMMON CONFIRMATION MODAL */}
+        <ConfirmationModal
+          title="Delete Category"
+          description={
+            categoryToDelete
+              ? `Are you sure you want to delete "${categoryToDelete.name}"?`
+              : ""
+          }
+          isOpen={!!categoryToDelete}
+          onConfirm={confirmDelete}
+          onCancel={cancelDelete}
+        />
 
         {/* Categories Table */}
         {loading ? (

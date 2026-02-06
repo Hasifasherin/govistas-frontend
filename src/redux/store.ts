@@ -5,13 +5,14 @@ import adminReducer from "./slices/adminSlice";
 import adminUsersReducer from "./slices/adminUsersSlice";
 import adminOperatorsReducer from "./slices/adminOperatorsSlice"; 
 import adminToursReducer from "./slices/adminToursSlice";
-
+import adminReviewsReducer from "./slices/adminReviewsSlice"
 export const store = configureStore({
   reducer: {
     admin: adminReducer,
     adminUsers: adminUsersReducer, 
     adminOperators: adminOperatorsReducer, 
     adminTours: adminToursReducer, 
+    adminReviews: adminReviewsReducer,
     
   },
 });
