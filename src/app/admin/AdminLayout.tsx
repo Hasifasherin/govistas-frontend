@@ -2,8 +2,9 @@
 
 import { ReactNode, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, usePathname } from "next/navigation";
-import { LogOut } from "lucide-react";
+import { LogOut, LayoutDashboard, Map, Calendar, ImageIcon, Users, Star, MessageSquare } from "lucide-react";
 
 import { useAppDispatch, useAppSelector } from "../../hooks/useAdminRedux";
 import { logout } from "../../redux/slices/adminSlice";
@@ -17,6 +18,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
   const dispatch = useAppDispatch();
   const user = useAppSelector((state) => state.admin.user);
+
   const [mounted, setMounted] = useState(false);
 
   /* ================= HYDRATION SAFE ================= */
@@ -31,70 +33,95 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   if (!mounted) return null;
 
-  /* ================= COMPLETE LOGOUT ================= */
+  /* ================= LOGOUT ================= */
   const handleLogout = () => {
-  dispatch(logout());
+    dispatch(logout());
+    localStorage.removeItem("adminToken");
+    sessionStorage.clear();
+    window.location.href = "/";
+  };
 
-  localStorage.removeItem("adminToken");
-  sessionStorage.clear();
-
-  window.location.href = "/";   
-};
-
-
-  /* ================= MENU ITEMS ================= */
+  /* ================= MENU ================= */
   const menuItems = [
-    { label: "Dashboard", href: "/admin/dashboard" },
-    { label: "Tours", href: "/admin/tours" },
-    { label: "Bookings", href: "/admin/bookings" },
-    { label: "Slider", href: "/admin/sliders" },
-    { label: "Categories", href: "/admin/categories" },
-    { label: "Chat", href: "/admin/chat" },
-    { label: "Users", href: "/admin/users" },
-    { label: "Operators", href: "/admin/operators" },
-    { label: "Reviews", href: "/admin/reviews" },
+    { label: "Dashboard", href: "/admin/dashboard", icon: LayoutDashboard },
+    { label: "Tours", href: "/admin/tours", icon: Map },
+    { label: "Bookings", href: "/admin/bookings", icon: Calendar },
+    { label: "Sliders", href: "/admin/sliders", icon: ImageIcon },
+    { label: "Categories", href: "/admin/categories", icon: LayoutDashboard },
+    { label: "Users", href: "/admin/users", icon: Users },
+    { label: "Operators", href: "/admin/operators", icon: Users },
+    { label: "Reviews", href: "/admin/reviews", icon: Star },
+    { label: "Chat", href: "/admin/chat", icon: MessageSquare },
   ];
 
+  const getUserName = () =>
+    user?.name || user?.email || "Admin";
+
+  const getUserInitials = () =>
+    getUserName().substring(0, 2).toUpperCase();
+
   return (
-    <div className="min-h-screen bg-green-50 text-green-900">
+    <div className="min-h-screen flex bg-gray-100">
       {/* ================= SIDEBAR ================= */}
-      <aside className="fixed left-0 top-0 h-screen w-64 bg-green-900 text-green-50 flex flex-col z-50">
-        <div className="p-6 text-center font-bold text-xl border-b border-green-50/20">
-          Admin Panel
+      <aside className="fixed left-0 top-0 h-screen w-64 bg-white shadow-lg flex flex-col z-50">
+        
+        {/* ===== LOGO SECTION (SAME AS OPERATOR) ===== */}
+        <div className="p-6 border-b flex flex-col items-center">
+          <div className="relative w-28 h-12 mb-2">
+            <Image
+              src="/logo/logos.png"
+              alt="GoVista"
+              fill
+              className="object-contain"
+            />
+          </div>
+          <span className="text-xs text-gray-500 font-semibold tracking-wide">
+            ADMIN PANEL
+          </span>
         </div>
 
+        {/* ===== NAVIGATION ===== */}
         <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
-          {menuItems.map((item) =>
-            item.href ? (
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            const active = pathname.startsWith(item.href);
+
+            return (
               <Link
                 key={item.label}
                 href={item.href}
-                className={`block px-4 py-2 rounded transition hover:bg-green-600 ${pathname === item.href ? "bg-green-600" : ""
-                  }`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-lg transition ${
+                  active
+                    ? "bg-green-600 text-white"
+                    : "text-gray-700 hover:bg-gray-100"
+                }`}
               >
+                <Icon size={18} />
                 {item.label}
               </Link>
-            ) : (
-              <div
-                key={item.label}
-                className="block px-4 py-2 rounded cursor-pointer hover:bg-green-600 transition"
-                title="No redirect"
-              >
-                {item.label}
-              </div>
-            )
-          )}
+            );
+          })}
         </nav>
 
-        {/* ================= SIDEBAR FOOTER ================= */}
-        <div className="p-4 border-t border-green-50/20">
+        {/* ===== USER FOOTER ===== */}
+        <div className="p-4 border-t">
           <div className="flex items-center justify-between">
-            <span className="font-medium">
-              {user?.name || user?.email} ({user?.role})
-            </span>
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 rounded-full bg-green-600 text-white flex items-center justify-center font-bold">
+                {getUserInitials()}
+              </div>
+
+              <div className="text-sm">
+                <p className="font-semibold leading-none">
+                  {getUserName()}
+                </p>
+                <p className="text-xs text-gray-500">Administrator</p>
+              </div>
+            </div>
+
             <button
               onClick={handleLogout}
-              className="hover:text-red-400 transition"
+              className="text-gray-600 hover:text-red-500 transition"
               title="Logout"
             >
               <LogOut size={20} />
@@ -103,8 +130,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         </div>
       </aside>
 
-      {/* ================= MAIN CONTENT ================= */}
-      <main className="ml-64 min-h-screen p-8 overflow-y-auto">
+      {/* ================= MAIN ================= */}
+      <main className="ml-64 flex-1 p-8">
         {children}
       </main>
     </div>
