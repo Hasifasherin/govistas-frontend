@@ -1,16 +1,14 @@
-// app/operator/bookings/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
-import { operatorService } from "../../../services";
-import { Booking, Tour } from "../../../types";
+import { getOperatorBookings, updateBookingStatus } from "../../../services/adminBookingService";
+import { Booking } from "../../../types/booking";
 import {
   FiEye,
   FiCheck,
   FiX,
   FiCalendar,
   FiUsers,
-  FiFilter,
   FiSearch,
   FiDownload,
   FiRefreshCw
@@ -30,10 +28,8 @@ export default function OperatorBookings() {
   const fetchBookings = async () => {
     try {
       setLoading(true);
-      const response = await operatorService.getMyBookings();
-      if (response.success) {
-        setBookings(response.data || []);
-      }
+      const data = await getOperatorBookings();
+      setBookings(data || []);
     } catch (error) {
       console.error("Error fetching bookings:", error);
     } finally {
@@ -41,54 +37,72 @@ export default function OperatorBookings() {
     }
   };
 
-  const handleUpdateStatus = async (bookingId: string, status: 'accepted' | 'rejected') => {
-    try {
-      await operatorService.updateBookingStatus(bookingId, status);
-      fetchBookings(); // Refresh data
-    } catch (error) {
-      console.error("Error updating booking:", error);
-      alert("Failed to update booking status");
-    }
-  };
+  const handleUpdateStatus = async (
+  bookingId: string,
+  status: "accepted" | "rejected" | "cancelled" // <-- add "cancelled"
+) => {
+  try {
+    const updatedBooking = await updateBookingStatus(bookingId, status);
 
-  const filteredBookings = bookings.filter(booking => {
-    // Filter by status
+    // Update local state
+    setBookings((prev) =>
+      prev.map((b) =>
+        b._id === bookingId ? { ...b, status: updatedBooking.status } : b
+      )
+    );
+
+    if (selectedBooking?._id === bookingId) {
+      setSelectedBooking({ ...selectedBooking, status: updatedBooking.status });
+    }
+  } catch (error: any) {
+    console.error("Error updating booking:", error);
+
+    // Show backend message if available
+    const msg = error.response?.data?.message || "Failed to update booking status";
+    alert(msg);
+  }
+};
+
+
+  const filteredBookings = bookings.filter((booking) => {
     if (filter !== "all" && booking.status !== filter) return false;
-    
-    // Filter by search
     if (search) {
-      const tourTitle = (booking.tourId as Tour)?.title?.toLowerCase() || "";
-      const customerName = `${(booking.userId as any)?.firstName || ""} ${(booking.userId as any)?.lastName || ""}`.toLowerCase();
+      const tourTitle = booking.tourId?.title?.toLowerCase() || "";
+      const customerName = `${booking.userId?.firstName || ""} ${booking.userId?.lastName || ""}`.toLowerCase();
       return tourTitle.includes(search.toLowerCase()) || customerName.includes(search.toLowerCase());
     }
-    
     return true;
   });
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "-";
+    return new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
     });
   };
 
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+  const formatCurrency = (amount: number) =>
+    new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: "USD",
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
     }).format(amount);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'accepted': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
-      case 'cancelled': return 'bg-gray-100 text-gray-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "pending":
+        return "bg-yellow-100 text-yellow-800";
+      case "accepted":
+        return "bg-green-100 text-green-800";
+      case "rejected":
+        return "bg-red-100 text-red-800";
+      case "cancelled":
+        return "bg-gray-100 text-gray-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -97,19 +111,16 @@ export default function OperatorBookings() {
     { value: "pending", label: "Pending" },
     { value: "accepted", label: "Accepted" },
     { value: "rejected", label: "Rejected" },
-    { value: "cancelled", label: "Cancelled" },
+    { value: "cancelled", label: "Cancelled" }
   ];
 
   const stats = {
     total: bookings.length,
-    pending: bookings.filter(b => b.status === 'pending').length,
-    accepted: bookings.filter(b => b.status === 'accepted').length,
+    pending: bookings.filter((b) => b.status === "pending").length,
+    accepted: bookings.filter((b) => b.status === "accepted").length,
     revenue: bookings
-      .filter(b => b.status === 'accepted')
-      .reduce((sum, booking) => {
-        const tour = booking.tourId as Tour;
-        return sum + (tour?.price || 0) * booking.participants;
-      }, 0)
+      .filter((b) => b.status === "accepted")
+      .reduce((sum, booking) => sum + (booking.tourId?.price || 0) * booking.participants, 0)
   };
 
   return (
@@ -144,7 +155,6 @@ export default function OperatorBookings() {
             </div>
           </div>
         </div>
-
         <div className="bg-white rounded-xl p-5 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -156,7 +166,6 @@ export default function OperatorBookings() {
             </div>
           </div>
         </div>
-
         <div className="bg-white rounded-xl p-5 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -168,7 +177,6 @@ export default function OperatorBookings() {
             </div>
           </div>
         </div>
-
         <div className="bg-white rounded-xl p-5 border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
@@ -185,31 +193,25 @@ export default function OperatorBookings() {
       {/* FILTERS */}
       <div className="bg-white rounded-xl p-5 border border-gray-200">
         <div className="flex flex-col md:flex-row gap-4">
-          {/* SEARCH */}
-          <div className="flex-1">
-            <div className="relative">
-              <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
-              <input
-                type="text"
-                placeholder="Search by tour name or customer..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
-              />
-            </div>
+          <div className="flex-1 relative">
+            <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={20} />
+            <input
+              type="text"
+              placeholder="Search by tour name or customer..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent"
+            />
           </div>
-
-          {/* STATUS FILTER */}
           <div className="flex gap-2 overflow-x-auto pb-2 md:pb-0">
             {statusOptions.map((option) => (
               <button
                 key={option.value}
                 onClick={() => setFilter(option.value)}
-                className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap ${
-                  filter === option.value
+                className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap ${filter === option.value
                     ? "bg-green-600 text-white"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
+                  }`}
               >
                 {option.label}
               </button>
@@ -233,8 +235,8 @@ export default function OperatorBookings() {
               </div>
               <h3 className="text-lg font-semibold text-gray-700 mb-2">No bookings found</h3>
               <p className="text-gray-500">
-                {search || filter !== "all" 
-                  ? "Try changing your search or filter criteria" 
+                {search || filter !== "all"
+                  ? "Try changing your search or filter criteria"
                   : "You don't have any bookings yet"}
               </p>
             </div>
@@ -255,73 +257,107 @@ export default function OperatorBookings() {
                     Status
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Manage Status
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
                   </th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
                 {filteredBookings.map((booking) => {
-                  const tour = booking.tourId as Tour;
-                  const user = booking.userId as any;
-                  
+                  const tour = booking.tourId;
+                  const user = booking.userId;
+
                   return (
                     <tr key={booking._id} className="hover:bg-gray-50">
+                      {/* Tour & Customer */}
                       <td className="px-6 py-4">
                         <div>
-                          <p className="font-medium text-gray-900">{tour?.title || "Unknown Tour"}</p>
+                          <p className="font-medium text-gray-900">{tour.title || "Unknown Tour"}</p>
                           <div className="mt-1">
-                            <p className="text-sm text-gray-600">
-                              {user?.firstName} {user?.lastName}
-                            </p>
-                            <p className="text-xs text-gray-500">{user?.email}</p>
+                            <p className="text-sm text-gray-600">{user.firstName} {user.lastName}</p>
+                            <p className="text-xs text-gray-500">{user.email}</p>
                           </div>
                         </div>
                       </td>
+
+                      {/* Date & Participants */}
                       <td className="px-6 py-4">
                         <div className="text-sm text-gray-900">{formatDate(booking.bookingDate)}</div>
                         <div className="text-sm text-gray-500 mt-1">
-                          {booking.participants} participant{booking.participants > 1 ? 's' : ''}
+                          {booking.participants} participant{booking.participants > 1 ? "s" : ""}
                         </div>
                       </td>
+
+                      {/* Price */}
                       <td className="px-6 py-4">
                         <div className="text-lg font-semibold text-green-700">
-                          {formatCurrency((tour?.price || 0) * booking.participants)}
+                          {formatCurrency((tour.price || 0) * booking.participants)}
                         </div>
                         <div className="text-sm text-gray-500">
-                          {formatCurrency(tour?.price || 0)} per person
+                          {formatCurrency(tour.price || 0)} per person
                         </div>
                       </td>
+
+                      {/* Status */}
                       <td className="px-6 py-4">
                         <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(booking.status)}`}>
                           {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
                         </span>
                       </td>
+
+                      {/* Manage Status */}
+<td className="px-6 py-4">
+  {booking.status === "pending" ? (
+    <div className="flex gap-2">
+      <button
+        onClick={async () => {
+          try {
+            await handleUpdateStatus(booking._id, "accepted");
+          } catch {
+            alert("Failed to update status");
+          }
+        }}
+        className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+      >
+        Accept
+      </button>
+      <button
+        onClick={async () => {
+          try {
+            await handleUpdateStatus(booking._id, "rejected");
+          } catch {
+            alert("Failed to update status");
+          }
+        }}
+        className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200"
+      >
+        Reject
+      </button>
+    </div>
+  ) : (
+    <span
+      className={`px-4 py-2 rounded-lg text-sm font-medium ${
+        booking.status === "accepted" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+      }`}
+    >
+      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+    </span>
+  )}
+</td>
+
+
+
+
+                      {/* Actions */}
                       <td className="px-6 py-4">
-                        <div className="flex items-center gap-2">
-                          {booking.status === 'pending' ? (
-                            <>
-                              <button
-                                onClick={() => handleUpdateStatus(booking._id, 'accepted')}
-                                className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
-                              >
-                                Accept
-                              </button>
-                              <button
-                                onClick={() => handleUpdateStatus(booking._id, 'rejected')}
-                                className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          ) : (
-                            <button
-                              onClick={() => setSelectedBooking(booking)}
-                              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
-                            >
-                              <FiEye size={16} />
-                            </button>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => setSelectedBooking(booking)}
+                          className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-200"
+                        >
+                          <FiEye size={16} />
+                        </button>
                       </td>
                     </tr>
                   );
@@ -332,7 +368,7 @@ export default function OperatorBookings() {
         </div>
       </div>
 
-      {/* BOOKING DETAILS MODAL */}
+      {/* MODAL */}
       {selectedBooking && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -346,65 +382,51 @@ export default function OperatorBookings() {
                   ✕
                 </button>
               </div>
-              
+
               <div className="space-y-6">
+                {/* TOUR & CUSTOMER INFO */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Tour Information</h4>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {(selectedBooking.tourId as Tour)?.title}
-                    </p>
-                    <p className="text-gray-600">
-                      {(selectedBooking.tourId as Tour)?.location}
-                    </p>
+                    <p className="text-lg font-semibold text-gray-900">{selectedBooking.tourId.title}</p>
+                    <p className="text-gray-600">{selectedBooking.tourId.location}</p>
                   </div>
-                  
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Customer Information</h4>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {(selectedBooking.userId as any)?.firstName} {(selectedBooking.userId as any)?.lastName}
-                    </p>
-                    <p className="text-gray-600">
-                      {(selectedBooking.userId as any)?.email}
-                    </p>
+                    <p className="text-lg font-semibold text-gray-900">{selectedBooking.userId.firstName} {selectedBooking.userId.lastName}</p>
+                    <p className="text-gray-600">{selectedBooking.userId.email}</p>
                   </div>
                 </div>
-                
+
+                {/* DATE, PARTICIPANTS, TOTAL */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Booking Date</h4>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {formatDate(selectedBooking.bookingDate)}
-                    </p>
+                    <p className="text-lg font-semibold text-gray-900">{formatDate(selectedBooking.bookingDate)}</p>
                   </div>
-                  
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Participants</h4>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {selectedBooking.participants} people
-                    </p>
+                    <p className="text-lg font-semibold text-gray-900">{selectedBooking.participants} people</p>
                   </div>
-                  
                   <div>
                     <h4 className="text-sm font-medium text-gray-500 mb-2">Total Amount</h4>
-                    <p className="text-lg font-semibold text-green-700">
-                      {formatCurrency(((selectedBooking.tourId as Tour)?.price || 0) * selectedBooking.participants)}
-                    </p>
+                    <p className="text-lg font-semibold text-green-700">{formatCurrency((selectedBooking.tourId.price || 0) * selectedBooking.participants)}</p>
                   </div>
                 </div>
-                
+
+                {/* STATUS & BOOKING ID */}
                 <div>
                   <h4 className="text-sm font-medium text-gray-500 mb-2">Status</h4>
                   <span className={`px-4 py-2 rounded-full text-sm font-medium ${getStatusColor(selectedBooking.status)}`}>
                     {selectedBooking.status.charAt(0).toUpperCase() + selectedBooking.status.slice(1)}
                   </span>
                 </div>
-                
                 <div>
                   <h4 className="text-sm font-medium text-gray-500 mb-2">Booking ID</h4>
                   <p className="text-gray-900 font-mono">{selectedBooking._id}</p>
                 </div>
-                
+
+                {/* MODAL ACTIONS */}
                 <div className="flex justify-end gap-3 pt-6 border-t border-gray-200">
                   <button
                     onClick={() => setSelectedBooking(null)}
@@ -412,11 +434,11 @@ export default function OperatorBookings() {
                   >
                     Close
                   </button>
-                  {selectedBooking.status === 'pending' && (
+                  {selectedBooking.status === "pending" && (
                     <>
                       <button
                         onClick={() => {
-                          handleUpdateStatus(selectedBooking._id, 'accepted');
+                          handleUpdateStatus(selectedBooking._id, "accepted");
                           setSelectedBooking(null);
                         }}
                         className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
@@ -425,7 +447,7 @@ export default function OperatorBookings() {
                       </button>
                       <button
                         onClick={() => {
-                          handleUpdateStatus(selectedBooking._id, 'rejected');
+                          handleUpdateStatus(selectedBooking._id, "rejected");
                           setSelectedBooking(null);
                         }}
                         className="px-6 py-3 bg-red-100 text-red-700 rounded-lg hover:bg-red-200"

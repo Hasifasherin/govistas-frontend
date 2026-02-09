@@ -6,6 +6,8 @@ import adminUsersReducer from "./slices/adminUsersSlice";
 import adminOperatorsReducer from "./slices/adminOperatorsSlice"; 
 import adminToursReducer from "./slices/adminToursSlice";
 import adminReviewsReducer from "./slices/adminReviewsSlice"
+import operatorDashboardReducer from "./slices/operatorDashboardSlice";
+
 export const store = configureStore({
   reducer: {
     admin: adminReducer,
@@ -13,7 +15,7 @@ export const store = configureStore({
     adminOperators: adminOperatorsReducer, 
     adminTours: adminToursReducer, 
     adminReviews: adminReviewsReducer,
-    
+    operatorDashboard: operatorDashboardReducer,
   },
 });
 

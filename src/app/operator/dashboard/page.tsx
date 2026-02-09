@@ -1,13 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import Link from "next/link";
 import { useAuth } from "../../context/AuthContext";
-import { operatorAPI } from "../../../services/operator";
-import { OperatorStats, OperatorBooking } from "../../../types/operator";
-import styles from "../styles/OperatorDashboard.module.css";
-import { FiEye, FiCheck, FiX, FiCalendar, FiDollarSign, FiMap, FiUsers } from "react-icons/fi";
-import { Line, Bar, Doughnut } from "react-chartjs-2";
+import { useAppDispatch, useAppSelector } from "../../../hooks/useAdminRedux";
+import { fetchDashboardStats } from "../../../redux/slices/operatorDashboardSlice";
+import {
+  FiMap,
+  FiCalendar,
+  FiUsers,
+  FiDollarSign,
+  FiTrendingUp,
+  FiClock,
+  FiStar,
+} from "react-icons/fi";
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -15,177 +22,217 @@ import {
   BarElement,
   PointElement,
   LineElement,
-  Title,
+  ArcElement,
   Tooltip,
   Legend,
-  ArcElement,
 } from "chart.js";
 
-ChartJS.register(CategoryScale, LinearScale, BarElement, PointElement, LineElement, Title, Tooltip, Legend, ArcElement);
+import { Line, Bar, Doughnut, Pie } from "react-chartjs-2";
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  PointElement,
+  LineElement,
+  ArcElement,
+  Tooltip,
+  Legend
+);
 
 export default function OperatorDashboard() {
-  const { user, loading: authLoading } = useAuth();
-  const [stats, setStats] = useState<OperatorStats | null>(null);
-  const [recentBookings, setRecentBookings] = useState<OperatorBooking[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { user, token, loading: authLoading } = useAuth();
+  const dispatch = useAppDispatch();
+  const { stats, loading } = useAppSelector((state) => state.operatorDashboard);
 
+  // Load dashboard stats
   useEffect(() => {
-    if (!authLoading && user?.role === "operator") loadDashboard();
-  }, [authLoading, user]);
-
-  const loadDashboard = async () => {
-    try {
-      setLoading(true);
-
-      // ✅ Fetch stats from backend
-      const statsRes = await operatorAPI.getDashboardStats();
-      if (statsRes.success) setStats(statsRes.stats);
-
-      // ✅ Fetch recent bookings
-      const bookingsRes = await operatorAPI.getMyBookings();
-      if (bookingsRes.success) setRecentBookings(bookingsRes.bookings.slice(0, 5));
-
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+    if (!authLoading && token && user?.role === "operator") {
+      dispatch(fetchDashboardStats(token));
     }
-  };
+  }, [authLoading, token, user, dispatch]);
 
-  const handleUpdateStatus = async (bookingId: string, status: "accepted" | "rejected") => {
-    try {
-      await operatorAPI.updateBookingStatus(bookingId, status);
-      setRecentBookings(prev => prev.map(b => (b._id === bookingId ? { ...b, status } : b)));
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
-  const formatCurrency = (amount = 0) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(amount);
-
-  const formatDate = (date: string) =>
-    new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-
-  if (authLoading || loading)
+  if (authLoading || loading) {
     return (
       <div className="flex justify-center items-center min-h-[60vh]">
         <div className="animate-spin h-10 w-10 border-b-2 border-green-600 rounded-full" />
       </div>
     );
+  }
 
-  if (!user || user.role !== "operator")
-    return <div className="text-center py-20 text-gray-600">Unauthorized access</div>;
+  if (!user || user.role !== "operator") {
+    return (
+      <div className="text-center py-20 text-gray-500">
+        Unauthorized Access
+      </div>
+    );
+  }
 
-  // ================= CHART DATA =================
-  const revenueData = {
-    labels: stats?.monthlyRevenue?.map(m => m.month) || [],
+  /* ================= CHART DATA ================= */
+  const revenueLineData = {
+    labels: stats?.monthlyRevenue.map((m) => m.month) || [],
     datasets: [
-      { label: "Revenue", data: stats?.monthlyRevenue?.map(m => m.amount) || [], borderColor: "#22c55e", backgroundColor: "rgba(34,197,94,0.2)", tension: 0.3 },
+      {
+        label: "Revenue",
+        data: stats?.monthlyRevenue.map((m) => m.amount) || [],
+        borderColor: "#22c55e",
+        backgroundColor: "rgba(34,197,94,0.15)",
+        tension: 0.4,
+        fill: true,
+      },
     ],
   };
 
-  const bookingsData = {
-    labels: stats?.monthlyBookings?.map(m => m.month) || [],
-    datasets: [{ label: "Bookings", data: stats?.monthlyBookings?.map(m => m.count) || [], backgroundColor: "rgba(59,130,246,0.7)" }],
+  const bookingBarData = {
+    labels: stats?.monthlyBookings.map((m) => m.month) || [],
+    datasets: [
+      {
+        label: "Bookings",
+        data: stats?.monthlyBookings.map((m) => m.count) || [],
+        backgroundColor: "rgba(59,130,246,0.7)",
+      },
+    ],
   };
 
-  const categoriesData = {
-    labels: stats?.tourCategories?.map(c => c.category) || [],
-    datasets: [{ label: "Tours", data: stats?.tourCategories?.map(c => c.count) || [], backgroundColor: ["#10B981","#3B82F6","#F59E0B","#EF4444","#8B5CF6","#06B6D4","#F43F5E"] }],
+ const categoryDonutData = {
+  labels: stats?.tourCategories.map(c => c.category),
+  datasets: [
+    {
+      data: stats?.tourCategories.map(c => c.count),
+      backgroundColor: [
+        "#10B981",
+        "#3B82F6",
+        "#F59E0B",
+        "#EF4444",
+        "#8B5CF6",
+        "#06B6D4",
+      ],
+    },
+  ],
+};
+
+
+  const bookingStatusPie = {
+    labels: ["Pending", "Accepted", "Rejected"],
+    datasets: [
+      {
+        data: [
+          stats?.pendingBookings || 0,
+          stats?.acceptedBookings || 0,
+          stats?.rejectedBookings || 0,
+        ],
+        backgroundColor: ["#F59E0B", "#22C55E", "#EF4444"],
+      },
+    ],
   };
 
   return (
-    <div className={styles.dashboard}>
-      {/* Stats Cards */}
-      <div className={styles.statsGrid}>
-        <StatCard label="Total Tours" value={stats?.totalTours} icon={<FiMap />} />
-        <StatCard label="Total Bookings" value={stats?.totalBookings} icon={<FiCalendar />} />
-        <StatCard label="Pending Requests" value={stats?.pendingBookings} icon={<FiUsers />} highlight />
-        <StatCard label="Revenue" value={formatCurrency(stats?.totalRevenue)} icon={<FiDollarSign />} />
-        <StatCard label="Active Tours" value={stats?.activeTours} icon={<FiMap />} />
+    <div className="p-6 space-y-6">
+      {/* ===== TOP STATS ===== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+        <StatCard title="Total Tours" value={stats?.totalTours} icon={<FiMap />} />
+        <StatCard title="Total Bookings" value={stats?.totalBookings} icon={<FiCalendar />} />
+        <StatCard title="Revenue" value={`$${stats?.totalRevenue || 0}`} icon={<FiDollarSign />} />
+        <StatCard title="Active Tours" value={stats?.activeTours} icon={<FiTrendingUp />} />
       </div>
 
-      {/* Charts */}
-      <div className={styles.chartsGrid}>
-        <div className={styles.chartContainer}><h3 className={styles.chartTitle}>Revenue Overview</h3><Line data={revenueData} /></div>
-        <div className={styles.chartContainer}><h3 className={styles.chartTitle}>Monthly Bookings</h3><Bar data={bookingsData} /></div>
-        <div className={styles.chartContainer}><h3 className={styles.chartTitle}>Tour Categories</h3><Doughnut data={categoriesData} /></div>
+      {/* ===== SECOND ROW ===== */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+        <StatCard title="Pending Requests" value={stats?.pendingBookings} icon={<FiClock />} highlight />
+        <StatCard title="Customers" value={stats?.totalCustomers} icon={<FiUsers />} />
+        <StatCard title="Avg Rating" value={stats?.averageRating.toFixed(1)} icon={<FiStar />} />
       </div>
 
-      {/* Recent Bookings Table */}
-      <div className={styles.recentBookingsContainer}>
-        <div className={styles.recentBookingsHeader}>
-          <h2>Recent Booking Requests</h2>
-          <Link href="/operator/bookings">View all →</Link>
+      {/* ===== CHARTS ===== */}
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
+        <ChartCard title="Revenue Overview">
+          <Line data={revenueLineData} />
+        </ChartCard>
+
+        <ChartCard title="Monthly Bookings">
+          <Bar data={bookingBarData} />
+        </ChartCard>
+
+        <ChartCard title="Tour Categories">
+          <Doughnut data={categoryDonutData} />
+        </ChartCard>
+
+        <ChartCard title="Booking Status">
+          <Pie data={bookingStatusPie} />
+        </ChartCard>
+      </div>
+
+      {/* ===== UPCOMING BOOKINGS ===== */}
+      <div className="bg-white rounded-2xl shadow p-6">
+        <div className="flex justify-between items-center mb-4">
+          <h2 className="text-lg font-semibold">Upcoming Bookings</h2>
+          <Link href="/operator/bookings" className="text-sm text-green-600">
+            View All →
+          </Link>
         </div>
 
-        {recentBookings.length === 0 ? (
-          <div className={styles.recentBookingsEmpty}>No booking requests yet</div>
-        ) : (
-          <table className={styles.table}>
-            <thead>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50">
               <tr>
-                {["Tour", "Customer", "Date", "People", "Status", "Actions"].map(h => (
-                  <th key={h}>{h}</th>
-                ))}
+                <th className="p-3 text-left">Tour</th>
+                <th className="p-3 text-left">Customer</th>
+                <th className="p-3">Date</th>
+                <th className="p-3">People</th>
+                <th className="p-3">Status</th>
               </tr>
             </thead>
             <tbody>
-              {recentBookings.map(b => (
-                <tr key={b._id}>
-                  <td>{b.tourId?.title}</td>
-                  <td>
-                    {b.userId?.firstName} {b.userId?.lastName}
-                    <div className="text-sm text-gray-500">{b.userId?.email}</div>
-                  </td>
-                  <td>{formatDate(b.bookingDate)}</td>
-                  <td>{b.participants}</td>
-                  <td><StatusBadge status={b.status} /></td>
-                  <td>
-                    {b.status === "pending" ? (
-                      <div className="flex gap-2">
-                        <ActionBtn label="Accept" color="green" icon={<FiCheck />} onClick={() => handleUpdateStatus(b._id, "accepted")} />
-                        <ActionBtn label="Reject" color="red" icon={<FiX />} onClick={() => handleUpdateStatus(b._id, "rejected")} />
-                      </div>
-                    ) : (
-                      <Link href={`/operator/bookings/${b._id}`} className="text-sm text-gray-700 inline-flex items-center">
-                        <FiEye className="mr-1" /> View
-                      </Link>
-                    )}
-                  </td>
+              {stats?.upcomingBookings?.map((b) => (
+                <tr key={b._id} className="border-t">
+                  <td className="p-3">{b.tourId?.title}</td>
+                  <td className="p-3">{b.userId.firstName} {b.userId.lastName}</td>
+                  <td className="p-3 text-center">{new Date(b.bookingDate).toLocaleDateString()}</td>
+                  <td className="p-3 text-center">{b.participants}</td>
+                  <td className="p-3 text-center"><StatusBadge status={b.status} /></td>
                 </tr>
               ))}
             </tbody>
           </table>
-        )}
+        </div>
       </div>
     </div>
   );
 }
 
-/* ================= SMALL UI COMPONENTS ================= */
-const StatCard = ({ label, value, icon, highlight }: any) => (
-  <div className={`${styles.statCard} ${highlight ? "border-l-4 border-red-500" : ""}`}>
-    <div className="flex justify-between items-center">
+/* ================= COMPONENTS ================= */
+function StatCard({ title, value, icon, highlight }: any) {
+  return (
+    <div className={`bg-white rounded-2xl shadow p-5 flex justify-between items-center ${highlight ? "border-l-4 border-red-500" : ""}`}>
       <div>
-        <p className={styles.statLabel}>{label}</p>
-        <p className={styles.statValue}>{value ?? 0}</p>
-        {highlight && <p className={styles.statHighlight}>Needs attention</p>}
+        <p className="text-sm text-gray-500">{title}</p>
+        <h3 className="text-2xl font-bold">{value || 0}</h3>
       </div>
-      <div className={styles.statIcon}>{icon}</div>
+      <div className="text-2xl text-green-600">{icon}</div>
     </div>
-  </div>
-);
+  );
+}
 
-const StatusBadge = ({ status }: { status: string }) => (
-  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${status === "pending" ? "bg-yellow-100 text-yellow-800" : status === "accepted" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
-    {status.toUpperCase()}
-  </span>
-);
+function ChartCard({ title, children }: any) {
+  return (
+    <div className="bg-white rounded-2xl shadow p-6">
+      <h3 className="font-semibold mb-4">{title}</h3>
+      {children}
+    </div>
+  );
+}
 
-const ActionBtn = ({ label, color, icon, onClick }: any) => (
-  <button onClick={onClick} className={`flex items-center px-3 py-1 text-sm font-medium rounded-md ${color === "green" ? "bg-green-100 text-green-800 hover:bg-green-200" : "bg-red-100 text-red-800 hover:bg-red-200"}`}>
-    {icon} <span className="ml-1">{label}</span>
-  </button>
-);
+function StatusBadge({ status }: { status: string }) {
+  const colors: Record<string, string> = {
+    pending: "bg-yellow-100 text-yellow-800",
+    accepted: "bg-green-100 text-green-800",
+    rejected: "bg-red-100 text-red-800",
+    cancelled: "bg-gray-100 text-gray-800",
+  };
+
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${colors[status] || "bg-gray-100 text-gray-800"}`}>
+      {status}
+    </span>
+  );
+}

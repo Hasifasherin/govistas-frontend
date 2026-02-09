@@ -9,27 +9,35 @@ import TourCard from "../../components/tour/TourCard";
 import AddTourForm from "../../components/tour/AddTourForm";
 import { FiAlertCircle, FiFolderPlus } from "react-icons/fi";
 
+// ---------------------- Props for TourTopBar ----------------------
+type FilterType = "all" | "active" | "pending" | "inactive";
+
 export default function OperatorToursPage() {
   const router = useRouter();
   const [tours, setTours] = useState<OperatorTour[]>([]);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState("all");
+  const [filter, setFilter] = useState<FilterType>("all");
   const [showForm, setShowForm] = useState(false);
   const [editingTour, setEditingTour] = useState<OperatorTour | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Replace with actual token from auth context or session
+  const token = localStorage.getItem("token") || "";
+
   /* ---------------- FETCH TOURS ---------------- */
   useEffect(() => {
     fetchTours();
-  }, []);
+  }, [token]);
 
   const fetchTours = async () => {
+    if (!token) return;
+
     try {
       setLoading(true);
       setError(null);
-      const response = await operatorAPI.getMyTours();
-      if (response.success) {
-        setTours(response.tours || []);
+      const response = await operatorAPI.getMyTours(token); // ✅ pass token
+      if (response.data.success) {
+        setTours(response.data.tours || []); // ✅ use .data
       } else {
         setError("Failed to load tours. Please try again.");
       }
@@ -58,15 +66,13 @@ export default function OperatorToursPage() {
 
   /* ---------------- DELETE ---------------- */
   const handleDeleteTour = async (id: string) => {
+    if (!token) return;
     if (!window.confirm("Are you sure you want to delete this tour?")) return;
 
     try {
-      const res = await operatorAPI.deleteTour(id);
-      if (res.success) {
-        setTours(tours.filter((t) => t._id !== id));
-      } else {
-        setError("Failed to delete tour. Try again.");
-      }
+      const res = await operatorAPI.deleteTour(id, token); // ✅ pass token
+      if (res.data.success) setTours(tours.filter((t) => t._id !== id));
+      else setError("Failed to delete tour. Try again.");
     } catch (err: any) {
       setError(err.message || "Failed to delete tour.");
     }
@@ -87,7 +93,7 @@ export default function OperatorToursPage() {
       <div className="max-w-7xl mx-auto">
         <TourTopBar
           filter={filter}
-          setFilter={setFilter}
+          setFilter={setFilter as (value: string) => void} // ✅ cast to match props
           onAddTourClick={handleAddTourClick}
         />
 
@@ -96,8 +102,7 @@ export default function OperatorToursPage() {
           <AddTourForm
             onClose={() => setShowForm(false)}
             onTourAdded={handleTourAdded}
-            // @ts-ignore
-            editingTour={editingTour}
+            editingTour={editingTour} // ✅ should exist in AddTourForm props
           />
         )}
 

@@ -1,7 +1,46 @@
-import API from "../utils/api";
-import { AdminBooking } from "../types/booking";
+import { apiRequest } from "../utils/api";
+import { AdminBooking, Booking } from "../types/booking";
 
-export const getAdminBookings = async (month: string) => {
-  const res = await API.get(`/admin/bookings?month=${month}`);
-  return res.data.bookings as AdminBooking[];
+// ================== ADMIN BOOKINGS ==================
+
+// Get all admin bookings for a specific month
+export const getAdminBookings = async (month: string): Promise<AdminBooking[]> => {
+  const data = await apiRequest<{ bookings: AdminBooking[] }>(
+    "GET",
+    `/admin/bookings?month=${month}`
+  );
+  return data.bookings;
+};
+
+// ================== OPERATOR BOOKINGS ==================
+
+// Get operator bookings
+export const getOperatorBookings = async (): Promise<Booking[]> => {
+  const data = await apiRequest<{ bookings: Booking[] }>(
+    "GET",
+    "/operator/bookings"
+  );
+  return data.bookings;
+};
+
+// Update booking status (Accept / Reject / Cancel)
+export const updateBookingStatus = async (
+  bookingId: string,
+  status: "pending" | "accepted" | "rejected" | "cancelled"
+): Promise<Booking> => {
+  const data = await apiRequest<{ booking: Booking }>(
+    "PUT",
+    `/operator/bookings/${bookingId}/status`, // ✅ correct endpoint
+    { status }
+  );
+  return data.booking;
+};
+
+// Get specific booking details
+export const getBookingDetails = async (bookingId: string): Promise<Booking> => {
+  const data = await apiRequest<{ booking: Booking }>(
+    "GET",
+    `/operator/bookings/${bookingId}`
+  );
+  return data.booking;
 };

@@ -11,4 +11,5 @@ export interface User {
   phone?: string;
   gender?: "male" | "female";
   dob?: string;
+  token: string;
 }

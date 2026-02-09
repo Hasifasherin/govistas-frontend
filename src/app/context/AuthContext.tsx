@@ -71,6 +71,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         lastName: res.data.user.lastName,
         email: res.data.user.email,
         role: res.data.user.role || "user",
+          token: res.data.token, 
+
       };
       
       setUser(userData);
@@ -91,12 +93,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       
       const loggedInUser: User = {
-        _id: res.data.user._id,
-        firstName: res.data.user.firstName,
-        lastName: res.data.user.lastName,
-        email: res.data.user.email,
-        role: res.data.user.role || "user",
-      };
+  _id: res.data.user._id,
+  firstName: res.data.user.firstName,
+  lastName: res.data.user.lastName,
+  email: res.data.user.email,
+  role: res.data.user.role || "user",
+  token: res.data.token, // <-- Add this
+};
+
       
       setUser(loggedInUser);
       setToken(res.data.token);
@@ -123,6 +127,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         lastName: "User",
         email: email, // Use email from request since backend doesn't return user object
         role: "admin",
+          token: res.data.token, 
+
       };
       
       setUser(adminUser);
