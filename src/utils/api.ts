@@ -7,45 +7,39 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000, // Optional: timeout to avoid hanging requests
+  timeout: 10000,
 });
 
-// Add auth token automatically (client-side only)
+// Auth token interceptor
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("token");
       const adminToken = localStorage.getItem("adminToken");
       const authToken = adminToken || token;
-
       if (authToken && config.headers) {
         config.headers.Authorization = `Bearer ${authToken}`;
       }
     }
-
-    console.debug("API Request:", config.method?.toUpperCase(), config.url);
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Handle 401 globally
+// Global 401 handler
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (typeof window !== "undefined") {
-      if (error.response?.status === 401) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("adminToken");
-        window.location.href = "/auth/login";
-      }
+    if (typeof window !== "undefined" && error.response?.status === 401) {
+      localStorage.removeItem("token");
+      localStorage.removeItem("adminToken");
+      window.location.href = "/auth/login";
     }
-    console.error("API Response Error:", error);
     return Promise.reject(error);
   }
 );
 
-// ✅ Safe apiRequest helper
+// ✅ Generic typed apiRequest
 export const apiRequest = async <T = any>(
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
   url: string,
@@ -56,58 +50,21 @@ export const apiRequest = async <T = any>(
     const response = await api({
       method,
       url,
-      data,
+      ...(method === "GET" ? { params: data } : { data }),
       ...config,
     });
 
-    if (!response || !response.data) {
-      throw new Error("No data returned from API");
-    }
+    if (!response?.data) throw new Error("No data returned from API");
 
     return response.data as T;
   } catch (error: any) {
-    // ✅ Distinguish network errors
     if (!error.response) {
-      console.error(
-        `Network or CORS error on ${method} ${url}. Make sure backend is running and CORS is enabled.`,
-        error
-      );
+      console.error(`Network/CORS error on ${method} ${url}`, error);
     } else {
       console.error(`API Error (${method} ${url}):`, error.response.data || error.message);
     }
     throw error;
   }
-};
-
-// =============================
-// Booking-specific API helpers
-// =============================
-
-// Update booking status (Accept / Reject / Cancel)
-export const updateBookingStatus = async (
-  bookingId: string,
-  status: "pending" | "accepted" | "rejected" | "cancelled"
-): Promise<ApiResponse> => {
-  return apiRequest<ApiResponse>("PUT", `/operator/bookings/${bookingId}/status`, { status });
-};
-
-// =============================
-// Example other helpers you might already have
-// =============================
-
-// Fetch operator bookings
-export const getOperatorBookings = async (): Promise<ApiResponse> => {
-  return apiRequest<ApiResponse>("GET", "/operator/bookings");
-};
-
-// Fetch booking details
-export const getBookingDetails = async (bookingId: string): Promise<ApiResponse> => {
-  return apiRequest<ApiResponse>("GET", `/operator/bookings/${bookingId}`);
-};
-
-// Fetch operator dashboard stats
-export const getOperatorDashboard = async (): Promise<ApiResponse> => {
-  return apiRequest<ApiResponse>("GET", "/operator/dashboard");
 };
 
 export default api;

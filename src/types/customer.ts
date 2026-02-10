@@ -6,4 +6,7 @@ export interface Customer {
 
   phone?: string;
   createdAt?: string;
+
+totalBookings?: number;      // optional, for dashboard/stats
+  lastBookingDate?: string; 
 }

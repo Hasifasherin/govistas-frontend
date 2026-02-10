@@ -1,5 +1,6 @@
 import axios from "axios";
-
+import { OperatorReviewResponse } from "../types/review";
+import api from "../utils/api";
 export interface Review {
   _id: string;
   rating: number;
@@ -48,4 +49,10 @@ export const deleteAdminReview = async (id: string): Promise<void> => {
   await axios.delete(`${API_URL}/admin/reviews/${id}`, {
     headers: { Authorization: `Bearer ${token}` },
   });
+};
+
+//operator 
+export const getOperatorReviews = async (): Promise<OperatorReviewResponse> => {
+  const res = await api.get("/reviews/operator/reviews");
+  return res.data;
 };

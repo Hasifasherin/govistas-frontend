@@ -21,3 +21,31 @@ export interface Review {
   createdAt: string;
   updatedAt: string;
 }
+export interface OperatorReview {
+  _id: string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+
+  userId: {
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+
+  tourId: {
+    title: string;
+    location: string;
+  };
+}
+
+export interface OperatorReviewStats {
+  totalReviews: number;
+  averageRating: string;
+  complaintsCount: number;
+}
+
+export interface OperatorReviewResponse {
+  stats: OperatorReviewStats;
+  reviews: OperatorReview[];
+}

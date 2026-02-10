@@ -36,7 +36,7 @@ export default function OperatorLayout({ children }: { children: ReactNode }) {
 
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
-  const [notifications, setNotifications] = useState<any[]>([]); // real API later
+  const [notifications, setNotifications] = useState<any[]>([]); // fetch from API
 
   const notificationRef = useRef<HTMLDivElement>(null);
 
@@ -74,10 +74,15 @@ export default function OperatorLayout({ children }: { children: ReactNode }) {
   const navItems: NavItem[] = [
     { label: "Dashboard", href: "/operator/dashboard", icon: FiHome },
     { label: "My Tours", href: "/operator/tours", icon: FiMap },
-    { label: "Bookings", href: "/operator/bookings", icon: FiCalendar, badge: 5 },
-    { label: "Messages", href: "/operator/messages", icon: FiMessageSquare, badge: 2 },
+    { label: "Bookings", href: "/operator/bookings", icon: FiCalendar },
+    { label: "Customers", href: "/operator/customers", icon: FiUsers },
+    { label: "Payments", href: "/operator/payments", icon: FiDollarSign },
+    { label: "Earnings", href: "/operator/earnings", icon: FiDollarSign },
+    { label: "Messages", href: "/operator/messages", icon: FiMessageSquare },
+    { label: "Reviews", href: "/operator/reviews", icon: FiMessageSquare },
+    {label: "Notifications", href:"/operator/notifications",icon:FiBell},
     { label: "Analytics", href: "/operator/analytics", icon: FiTrendingUp },
-    { label: "Settings", href: "/operator/settings", icon: FiSettings }
+    { label: "Settings", href: "/operator/settings", icon: FiSettings },
   ];
 
   const handleLogout = () => {
@@ -95,32 +100,55 @@ export default function OperatorLayout({ children }: { children: ReactNode }) {
       ? `${user.firstName} ${user.lastName}`
       : "Operator";
 
+  const markAllAsRead = () => {
+    setNotifications((prev) =>
+      prev.map((n) => ({ ...n, isRead: true }))
+    );
+  };
+
   return (
     <div className={styles.operatorLayout}>
+      {/* OVERLAY */}
       {sidebarOpen && (
-        <div className={styles.overlay} onClick={() => setSidebarOpen(false)} />
+        <div
+          className={styles.overlay}
+          onClick={() => setSidebarOpen(false)}
+        />
       )}
 
-      {/* SIDEBAR (UNCHANGED) */}
-      <aside className={`${styles.sidebar} ${sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed}`}>
+      {/* SIDEBAR */}
+      <aside
+        className={`${styles.sidebar} ${
+          sidebarOpen ? styles.sidebarOpen : styles.sidebarClosed
+        }`}
+      >
+        {/* LOGO */}
         <div className={styles.logoSection}>
           <Link href="/operator/dashboard" className={styles.logoContainer}>
             <div className={styles.logoImage}>
-              <Image src="/logo/logos.png" alt="GoVista" fill className="object-contain" />
+              <Image
+                src="/logo/logos.png"
+                alt="GoVista"
+                fill
+                className="object-contain"
+              />
             </div>
             <div className={styles.logoSubtitle}>OPERATOR PANEL</div>
           </Link>
         </div>
 
+        {/* NAV ITEMS */}
         <nav className={styles.navContainer}>
-          {navItems.map(item => {
+          {navItems.map((item) => {
             const Icon = item.icon;
             const active = pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`${styles.navItem} ${active ? styles.navItemActive : ""}`}
+                className={`${styles.navItem} ${
+                  active ? styles.navItemActive : ""
+                }`}
               >
                 <Icon className={styles.navIcon} />
                 {item.label}
@@ -130,11 +158,7 @@ export default function OperatorLayout({ children }: { children: ReactNode }) {
             );
           })}
         </nav>
-
-        <Link href="/operator/tours/create" className={styles.createTourButton}>
-          <FiPlus /> Create New Tour
-        </Link>
-
+        {/* USER INFO */}
         <div className={styles.userSection}>
           <div className={styles.userInfo}>
             <div className={styles.userAvatar}>{getUserInitials()}</div>
@@ -149,58 +173,81 @@ export default function OperatorLayout({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
       <div className={styles.mainContent}>
+        {/* TOPBAR */}
         <header className={styles.topBar}>
           <div className="flex items-center">
-            <button onClick={() => setSidebarOpen(true)} className={styles.menuButton}>
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className={styles.menuButton}
+            >
               <FiMenu />
             </button>
           </div>
 
-          <div className={styles.rightActions}>
-            {/* 🔔 Notification (same position, floating dropdown) */}
-            <div ref={notificationRef} style={{ position: "relative" }}>
+          <div className="flex items-center gap-4">
+            {/* NOTIFICATIONS */}
+            <div ref={notificationRef} className="relative">
               <button
                 className={styles.notificationButton}
-                onClick={() => notifications.length && setNotificationOpen(v => !v)}
+                onClick={() => setNotificationOpen((v) => !v)}
               >
-                <FiBell />
-                {notifications.some(n => n.unread) && (
+                <FiBell className="text-xl" />
+                {notifications.some((n) => !n.isRead) && (
                   <span className={styles.notificationDot} />
                 )}
               </button>
 
               {notificationOpen && (
                 <div className={styles.notificationDropdown}>
-                  <div className={styles.notificationHeader}>Notifications</div>
-
-                  {notifications.map(n => (
-                    <div
-                      key={n.id}
-                      className={`${styles.notificationItem} ${n.unread ? styles.unread : ""}`}
+                  <div className={styles.notificationHeader}>
+                    Notifications
+                    <button
+                      className="text-sm text-green-600 hover:underline"
+                      onClick={markAllAsRead}
                     >
-                      <strong>{n.title}</strong>
-                      <p>{n.message}</p>
-                    </div>
-                  ))}
+                      Mark all read
+                    </button>
+                  </div>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <p className="p-4 text-center text-gray-500">
+                        No notifications
+                      </p>
+                    ) : (
+                      notifications.map((n) => (
+                        <Link
+                          key={n.id}
+                          href={n.href || "#"}
+                          className={`block px-4 py-3 hover:bg-gray-50 border-b border-gray-100 ${
+                            !n.isRead ? "bg-green-50 font-medium" : ""
+                          }`}
+                        >
+                          <p className="truncate">{n.title}</p>
+                          <p className="text-xs text-gray-500 truncate">
+                            {n.message}
+                          </p>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                  <Link
+                    href="/operator/notifications"
+                    className="block text-center text-sm text-green-600 py-2 hover:underline border-t border-gray-200"
+                  >
+                    View all
+                  </Link>
                 </div>
               )}
             </div>
 
-            <div className={styles.quickStats}>
-              <div className={styles.statBadge}>
-                <FiUsers /> <span>24 Active</span>
-              </div>
-              <div className={styles.statBadge}>
-                <FiDollarSign /> <span>$5.2K</span>
-              </div>
-            </div>
-
+            {/* MOBILE AVATAR */}
             <div className={styles.mobileAvatar}>{getUserInitials()}</div>
           </div>
         </header>
 
+        {/* MAIN CHILDREN */}
         <main className={styles.contentArea}>{children}</main>
       </div>
     </div>
