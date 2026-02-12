@@ -6,12 +6,13 @@ export interface Tour {
   location: string;
   duration: number;
   maxGroupSize: number;
-  category: string;
+  category: { _id: string; name: string } | null;
   availableDates: string[];
   image: string;
   createdBy: {
     _id: string;
-    name: string;
+    firstName: string;
+    lastName: string;
     email: string;
     role: string;
   };
@@ -23,13 +24,21 @@ export interface Tour {
   createdAt: string;
   updatedAt: string;
 }
-// in types/tour.ts
 export interface TourFilters {
   title?: string;
   location?: string;
+  destination?: string;
   category?: string;
+  date?: string;
   minPrice?: number;
   maxPrice?: number;
+  // Pagination
+  page?: number;
+  limit?: number;
+
+  // Extra (future-safe)
+  duration?: number;
+  isFeatured?: boolean;
 }
 
 export interface OperatorTour extends Tour {

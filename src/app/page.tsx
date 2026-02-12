@@ -1,10 +1,11 @@
 "use client";
 
-import Header from "./components/header/Header";
 import HomeSlider from "./components/slider/HomeSlider";
 import WhyBookWithUs from "./components/homepage/WhyBookWithUs";
 import LoginCTA from "./components/homepage/LoginCTA";
 import { useAuth } from "./context/AuthContext";
+import FeaturedTours from "./components/tour/FeaturedTours";
+import CategoryTours from "./components/tour/CategoryTours";
 
 export default function HomePage() {
   const { user, loading } = useAuth();
@@ -12,11 +13,16 @@ export default function HomePage() {
   if (loading) return null;
 
   return (
-    <>
-      <Header />
+    <main className="space-y-12">
       <HomeSlider />
       <WhyBookWithUs />
-      {!user && <LoginCTA />} 
-    </>
+      {!user && <LoginCTA />}
+
+      {/* Featured Tours */}
+      <FeaturedTours />
+
+      {/* Category-wise Tours */}
+      <CategoryTours />
+    </main>
   );
 }

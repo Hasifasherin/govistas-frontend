@@ -77,11 +77,10 @@ export default function OperatorLayout({ children }: { children: ReactNode }) {
     { label: "Bookings", href: "/operator/bookings", icon: FiCalendar },
     { label: "Customers", href: "/operator/customers", icon: FiUsers },
     { label: "Payments", href: "/operator/payments", icon: FiDollarSign },
-    { label: "Earnings", href: "/operator/earnings", icon: FiDollarSign },
+    { label: "Earnings", href: "/operator/earnings", icon: FiTrendingUp },
     { label: "Messages", href: "/operator/messages", icon: FiMessageSquare },
     { label: "Reviews", href: "/operator/reviews", icon: FiMessageSquare },
     {label: "Notifications", href:"/operator/notifications",icon:FiBell},
-    { label: "Analytics", href: "/operator/analytics", icon: FiTrendingUp },
     { label: "Settings", href: "/operator/settings", icon: FiSettings },
   ];
 
