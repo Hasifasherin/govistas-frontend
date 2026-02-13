@@ -3,13 +3,15 @@ import { ApiResponse } from "../types";
 
 // ✅ Create Axios instance
 const api = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api",
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL:
+    process.env.NEXT_PUBLIC_API_URL ||
+    (process.env.NODE_ENV === "development"
+      ? "http://localhost:5000/api"
+      : "https://govista-backend-1.onrender.com/api"),
+  headers: { "Content-Type": "application/json" },
   timeout: 10000,
-  withCredentials: true,
 });
+
 
 // Auth token interceptor
 api.interceptors.request.use(
