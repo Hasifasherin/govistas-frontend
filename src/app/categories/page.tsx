@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { tourAPI } from "../../services/tour";
 import { Tour } from "../../types/tour";
@@ -11,7 +11,7 @@ interface Category {
   name: string;
 }
 
-export default function CategoriesPage() {
+function CategoriesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const selectedCategory = searchParams.get("category");
@@ -59,13 +59,11 @@ export default function CategoriesPage() {
     fetchTours();
   }, [selectedCategory]);
 
-  // Active category (for showing title)
   const activeCategory = useMemo(
     () => categories.find((c) => c._id === selectedCategory),
     [categories, selectedCategory]
   );
 
-  // ---------------- CLICK HANDLERS ----------------
   const handleCategoryClick = (id: string) => {
     router.push(`/categories?category=${id}`);
   };
@@ -76,8 +74,6 @@ export default function CategoriesPage() {
 
   return (
     <div className="max-w-7xl mx-auto px-6 lg:px-8 py-16">
-
-      {/* ================= CATEGORY LIST VIEW ================= */}
       {!selectedCategory && (
         <>
           <div className="text-center mb-12">
@@ -115,7 +111,6 @@ export default function CategoriesPage() {
         </>
       )}
 
-      {/* ================= TOURS LIST VIEW ================= */}
       {selectedCategory && (
         <>
           <button
@@ -153,7 +148,14 @@ export default function CategoriesPage() {
           )}
         </>
       )}
-
     </div>
+  );
+}
+
+export default function CategoriesPage() {
+  return (
+    <Suspense fallback={<div className="p-10 text-center">Loading...</div>}>
+      <CategoriesContent />
+    </Suspense>
   );
 }

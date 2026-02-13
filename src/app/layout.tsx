@@ -29,13 +29,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Provider store={store}>
           <AuthProvider>
             {shouldShowHeader && <Header />}
-            
+
             {/* Add padding-top to prevent overlapping */}
             <div className={shouldShowHeader ? "pt-[80px]" : ""}>
               {children}
             </div>
 
-            <Footer />
+            {/* Only show footer if header is visible */}
+            {shouldShowHeader && <Footer />}
           </AuthProvider>
         </Provider>
       </body>
