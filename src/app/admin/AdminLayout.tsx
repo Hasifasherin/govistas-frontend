@@ -60,6 +60,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const getUserInitials = () =>
     getUserName().substring(0, 2).toUpperCase();
 
+  
   return (
     <div className="min-h-screen flex bg-gray-100">
       {/* ================= SIDEBAR ================= */}

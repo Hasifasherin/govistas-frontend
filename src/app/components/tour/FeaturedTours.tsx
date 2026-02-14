@@ -7,21 +7,32 @@ import { tourAPI } from "../../../services/tour";
 import { Tour } from "../../../types/tour";
 
 import UserTourCard from "./UserTourCard";
-import LoginModal from "../common/LoginModal"; 
+import LoginModal from "../common/LoginModal";
+
+// ✅ AUTH
+import { useAuth } from "../../context/AuthContext";
+
+// ✅ WISHLIST SERVICES
+import {
+  getWishlist,
+  addToWishlist,
+  removeFromWishlist,
+} from "../../../services/wishlistService";
 
 export default function FeaturedTours() {
   const router = useRouter();
+  const { user } = useAuth(); // ✅ real auth
 
   const [featuredTours, setFeaturedTours] = useState<Tour[]>([]);
+  const [wishlistIds, setWishlistIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
 
   // 🔐 login modal state
   const [loginOpen, setLoginOpen] = useState(false);
 
-  // 👉 fake auth check (replace with your real auth logic / redux / context)
-  const isLoggedIn =
-    typeof window !== "undefined" && !!localStorage.getItem("token");
+  const isLoggedIn = !!user;
 
+  // ---------------- FETCH FEATURED TOURS ----------------
   const fetchFeaturedTours = async () => {
     setLoading(true);
     try {
@@ -34,29 +45,64 @@ export default function FeaturedTours() {
     }
   };
 
+  // ---------------- FETCH WISHLIST ----------------
+  const fetchWishlist = async () => {
+    try {
+      const res = await getWishlist();
+
+      if (res?.wishlist) {
+        const ids = res.wishlist.map((tour: any) =>
+          typeof tour === "string" ? tour : tour._id
+        );
+
+        setWishlistIds(ids);
+      }
+    } catch (err) {
+      console.error("Failed to fetch wishlist:", err);
+    }
+  };
+
   useEffect(() => {
     fetchFeaturedTours();
-  }, []);
 
-  // ✅ CARD CLICK HANDLER
+    if (user) {
+      fetchWishlist();
+    }
+  }, [user]);
+
+  // ---------------- CARD CLICK ----------------
   const handleCardClick = (id: string) => {
     if (!isLoggedIn) {
       setLoginOpen(true);
       return;
     }
 
-    router.push(`user/tours/${id}`);
+    router.push(`/user/tours/${id}`); // ✅ fixed path
   };
 
-  const handleWishlist = (id: string) => {
+  // ---------------- WISHLIST TOGGLE ----------------
+  const handleWishlist = async (id: string) => {
     if (!isLoggedIn) {
       setLoginOpen(true);
       return;
     }
 
-    console.log("Add to wishlist:", id);
+    try {
+      if (wishlistIds.includes(id)) {
+        await removeFromWishlist(id);
+        setWishlistIds((prev) =>
+          prev.filter((wid) => wid !== id)
+        );
+      } else {
+        await addToWishlist(id);
+        setWishlistIds((prev) => [...prev, id]);
+      }
+    } catch (err) {
+      console.error("Wishlist action failed:", err);
+    }
   };
 
+  // ---------------- LOADING ----------------
   if (loading)
     return (
       <p className="text-center text-gray-500 mt-6">
@@ -66,9 +112,12 @@ export default function FeaturedTours() {
 
   if (featuredTours.length === 0) return null;
 
+  // ---------------- UI ----------------
   return (
     <div className="container mx-auto px-4 py-8">
-      <h2 className="text-3xl font-bold mb-6">Featured Tours</h2>
+      <h2 className="text-3xl font-bold mb-6">
+        Featured Tours
+      </h2>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {featuredTours.map((tour) => (
@@ -79,7 +128,8 @@ export default function FeaturedTours() {
           >
             <UserTourCard
               tour={tour}
-              onView={handleCardClick}      
+              isWishlisted={wishlistIds.includes(tour._id)} // ✅ pass state
+              onView={handleCardClick}
               onWishlist={handleWishlist}
             />
           </div>

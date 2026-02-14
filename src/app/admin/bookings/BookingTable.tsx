@@ -12,7 +12,6 @@ export default function BookingTable({ bookings }: Props) {
           <tr>
             <th className="p-3 text-left">Date</th>
             <th className="p-3 text-left">Tour</th>
-            <th className="p-3 text-left">Operator</th>
             <th className="p-3 text-left">People</th>
             <th className="p-3 text-left">Status</th>
             <th className="p-3 text-left">Payment</th>
@@ -42,7 +41,6 @@ export default function BookingTable({ bookings }: Props) {
                     : "N/A"}
                 </td>
                 <td className="p-3">{b.tourId?.title || "N/A"}</td>
-                <td className="p-3">{operatorDisplay}</td>
                 <td className="p-3">{b.participants || 0}</td>
                 <td className="p-3 capitalize">{b.status}</td>
                 <td className="p-3 capitalize">{b.paymentStatus}</td>
