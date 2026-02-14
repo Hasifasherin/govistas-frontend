@@ -1,19 +1,13 @@
 import axios, { AxiosRequestConfig } from "axios";
 import { ApiResponse } from "../types";
 
-// ✅ Create Axios instance
+/* ================== Axios Instance ================== */
 const api = axios.create({
-  baseURL:
-    process.env.NEXT_PUBLIC_API_URL ||
-    (process.env.NODE_ENV === "development"
-      ? "http://localhost:5000/api"
-      : "https://govista-backend-1.onrender.com/api"),
-  headers: { "Content-Type": "application/json" },
-  timeout: 10000,
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  timeout: 180_000, // 3 minutes
 });
 
-
-// Auth token interceptor
+/* ================== Request Interceptor ================== */
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
@@ -29,7 +23,7 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Global 401 handler
+/* ================== Response Interceptor ================== */
 api.interceptors.response.use(
   (response) => response,
   (error) => {
@@ -42,7 +36,7 @@ api.interceptors.response.use(
   }
 );
 
-// ✅ Generic typed apiRequest
+/* ================== Generic Typed API Request ================== */
 export const apiRequest = async <T = any>(
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH",
   url: string,
@@ -57,14 +51,19 @@ export const apiRequest = async <T = any>(
       ...config,
     });
 
-    if (!response?.data) throw new Error("No data returned from API");
+    if (!response?.data) {
+      throw new Error(`No data returned from API: ${method} ${url}`);
+    }
 
     return response.data as T;
   } catch (error: any) {
     if (!error.response) {
       console.error(`Network/CORS error on ${method} ${url}`, error);
     } else {
-      console.error(`API Error (${method} ${url}):`, error.response.data || error.message);
+      console.error(
+        `API Error (${method} ${url}):`,
+        error.response.data || error.message
+      );
     }
     throw error;
   }
