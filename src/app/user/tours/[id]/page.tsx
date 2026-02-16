@@ -62,9 +62,12 @@ export default function TourDetailPage() {
 
   // Navigate to chat with operator
   const handleMessage = () => {
-    if (!tour?.createdBy?._id) return;
-    router.push(`/user/chat/${tour.createdBy._id}`);
-  };
+  if (!tour?.createdBy?._id) return;
+
+  // Use query param to match UserChatPage
+  router.push(`/user/chat?operatorId=${tour.createdBy._id}`);
+};
+
 
   // Navigate to Booking Page
   const handleBooking = () => {

@@ -1,27 +1,35 @@
-import api from "../utils/api";
-import { Conversation } from "../types/conversation";
-import { Message } from "../types/message";
+// services/operatorChatService.ts
+import API from "../utils/api";
+import { Conversation, BackendMessage, MessagesResponse, ConversationResponse, SendMessageResponse } from "../types/chat";
 
-/**
- * Get all conversations for the operator
- */
 export const getOperatorConversations = async (): Promise<Conversation[]> => {
-  const res = await api.get<{ success: boolean; count: number; conversations: Conversation[] }>("/messages");
+  const res = await API.get<ConversationResponse>("/messages");
   return res.data.conversations || [];
 };
 
-/**
- * Get messages with a specific user
- */
-export const getOperatorUserMessages = async (userId: string): Promise<Message[]> => {
-  const res = await api.get<{ success: boolean; count: number; messages: Message[] }>(`/messages/conversation/${userId}`);
+export const getOperatorUserMessages = async (userId: string): Promise<BackendMessage[]> => {
+  if (!userId) throw new Error("userId is required");
+
+  const res = await API.get<MessagesResponse>(`/messages/conversation/${userId}`);
   return res.data.messages || [];
 };
 
-/**
- * Send a message to a specific user
- */
 export const sendOperatorMessage = async (data: { userId: string; message: string; bookingId?: string; tourId?: string }) => {
-  const res = await api.post<{ success: boolean; data: Message }>("/messages", data);
+  const res = await API.post<SendMessageResponse>("/messages", {
+    receiverId: data.userId,
+    message: data.message,
+    bookingId: data.bookingId || undefined,
+    tourId: data.tourId || undefined
+  });
   return res.data.data;
+};
+
+
+export const editOperatorMessage = async (messageId: string, message: string) => {
+  const res = await API.put<SendMessageResponse>(`/messages/${messageId}`, { message });
+  return res.data.data;
+};
+
+export const deleteOperatorMessage = async (messageId: string): Promise<void> => {
+  await API.delete(`/messages/${messageId}`);
 };

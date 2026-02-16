@@ -2,103 +2,87 @@
 
 import { useState, useEffect, useRef } from "react";
 import { FiSearch, FiMessageSquare, FiSend } from "react-icons/fi";
-import { useOperatorChat, Conversation, Message } from "../../../hooks/useOperatorChat";
-import { socket } from "../../../lib/socket";
+import { useOperatorChat } from "../../../hooks/useOperatorChat";
+import { Conversation, Message } from "../../../types/chat";
+import { useSearchParams } from "next/navigation";
 
 export default function MessagesPage() {
-  const operatorId = localStorage.getItem("operatorId") || ""; // required for the hook
+  const searchParams = useSearchParams();
+  const userIdFromQuery = searchParams.get("user"); // Get ?user=xxx
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
   const {
     conversations,
     messages,
     fetchMessages,
     sendMessage,
-    setMessages,
     loadingConversations,
     loadingMessages,
-  } = useOperatorChat(operatorId); // pass operatorId
+    fetchConversations,
+    setConversations,
+  } = useOperatorChat(userIdFromQuery || ""); // pass operatorId if needed in hook
 
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  const [newMessage, setNewMessage] = useState("");
-  const [search, setSearch] = useState("");
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  // Scroll to bottom whenever messages change
+  // Scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Filter conversations
-  const filteredConversations = conversations.filter(
-    (conv) =>
-      `${conv.firstName} ${conv.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
-      conv.lastMessage.toLowerCase().includes(search.toLowerCase())
-  );
-
-  // Select a conversation
-  const handleSelectConversation = async (userId: string) => {
-    setSelectedChat(userId);
-    await fetchMessages(userId);
-
-    // Join socket room
-    socket.emit("joinChat", { operatorId, userId });
-  };
-
-  // Auto-select first conversation
+  // Fetch all conversations initially
   useEffect(() => {
-    if (conversations.length > 0 && !selectedChat) {
-      handleSelectConversation(conversations[0].userId);
-    }
-  }, [conversations]);
+    fetchConversations();
+  }, [fetchConversations]);
 
-  // Listen for incoming messages
+  // Handle query param to auto-select conversation once
   useEffect(() => {
-    const handleReceiveMessage = (msg: Message & { sender: string; receiver: string }) => {
-      if (!selectedChat) return;
+    if (selectedChat) return; // already selected, do nothing
 
-      // Only add if message belongs to current conversation
-      if (msg.sender === selectedChat || msg.receiver === selectedChat) {
-        setMessages((prev) => [
-          ...prev,
-          {
-            id: msg.id,
-            sender: msg.sender === operatorId ? "operator" : "customer",
-            text: msg.text,
-            time: msg.time,
-            isMe: msg.sender === operatorId,
-          },
-        ]);
+    if (userIdFromQuery) {
+      const existingConv = conversations.find(c => c.userId === userIdFromQuery);
+
+      if (existingConv) setSelectedChat(existingConv.userId);
+      else {
+        // temporary conversation
+        const tempConv: Conversation = {
+          userId: userIdFromQuery,
+          firstName: "Customer",
+          lastName: "",
+          lastMessage: "",
+          lastMessageTime: "",
+          unreadCount: 0,
+        };
+        setConversations(prev => [tempConv, ...prev]);
+        setSelectedChat(userIdFromQuery);
       }
-    };
+    } else if (conversations.length > 0) {
+      setSelectedChat(conversations[0].userId);
+    }
+  }, [userIdFromQuery, conversations, selectedChat, setConversations]);
 
-    socket.on("newMessage", handleReceiveMessage);
+  // Fetch messages only when selectedChat changes
+  useEffect(() => {
+    if (selectedChat) {
+      fetchMessages(selectedChat);
+    }
+  }, [selectedChat, fetchMessages]);
 
-    return () => {
-      socket.off("newMessage", handleReceiveMessage);
-    };
-  }, [selectedChat, operatorId, setMessages]);
-
-  // Send a message
+  // Send message handler
   const handleSendMessage = () => {
     if (!newMessage.trim() || !selectedChat) return;
-
-    // Optimistic UI update
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: `temp_${Date.now()}`,
-        sender: "operator",
-        text: newMessage.trim(),
-        time: new Date().toISOString(),
-        isMe: true,
-      },
-    ]);
-
     sendMessage(selectedChat, newMessage.trim());
     setNewMessage("");
   };
 
-  const formatTime = (iso: string | number) =>
-    new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+  const formatTime = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+    } catch {
+      return "";
+    }
+  };
+
+  const getSelectedUser = () => conversations.find(c => c.userId === selectedChat);
 
   return (
     <div className="h-[calc(100vh-180px)] flex flex-col md:flex-row gap-6">
@@ -114,8 +98,6 @@ export default function MessagesPage() {
           <input
             type="text"
             placeholder="Search conversations..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
             className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
           />
         </div>
@@ -123,17 +105,17 @@ export default function MessagesPage() {
         <div className="flex-1 overflow-y-auto bg-white rounded-xl border border-gray-200">
           {loadingConversations ? (
             <p className="p-4 text-center text-gray-500">Loading...</p>
-          ) : filteredConversations.length === 0 ? (
-            <div className="p-8 text-center">
+          ) : conversations.length === 0 ? (
+            <div className="p-8 text-center text-gray-500">
               <FiMessageSquare className="text-gray-400 mx-auto mb-3" size={32} />
-              <p className="text-gray-500">No conversations found</p>
+              <p>No conversations found</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100">
-              {filteredConversations.map((conv: Conversation) => (
+              {conversations.map(conv => (
                 <div
                   key={conv.userId}
-                  onClick={() => handleSelectConversation(conv.userId)}
+                  onClick={() => setSelectedChat(conv.userId)}
                   className={`p-4 cursor-pointer transition-colors hover:bg-gray-50 ${
                     selectedChat === conv.userId ? "bg-green-50 border-l-4 border-l-green-500" : ""
                   }`}
@@ -141,14 +123,14 @@ export default function MessagesPage() {
                   <div className="flex items-start gap-3">
                     <div className="relative">
                       <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-semibold">
-                        {conv.firstName[0]}
-                        {conv.lastName[0]}
+                        {conv.firstName?.[0] || ''}{conv.lastName?.[0] || ''}
                       </div>
                       {conv.unreadCount > 0 && (
-                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-2 border-white"></div>
+                        <div className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 rounded-full border-2 border-white flex items-center justify-center text-xs text-white">
+                          {conv.unreadCount}
+                        </div>
                       )}
                     </div>
-
                     <div className="flex-1 min-w-0">
                       <div className="flex justify-between items-start mb-1">
                         <h4 className="font-semibold text-gray-800 truncate">
@@ -166,21 +148,17 @@ export default function MessagesPage() {
         </div>
       </div>
 
-      {/* CHAT AREA */}
+      {/* CHAT PANEL */}
       <div className="flex-1 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         {selectedChat ? (
           <>
-            {/* CHAT HEADER */}
+            {/* HEADER */}
             <div className="px-6 py-4 border-b border-gray-200 bg-white flex items-center gap-3">
               <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-green-600 rounded-full flex items-center justify-center text-white font-semibold">
-                {conversations.find((c) => c.userId === selectedChat)?.firstName[0]}
-                {conversations.find((c) => c.userId === selectedChat)?.lastName[0]}
+                {getSelectedUser()?.firstName?.[0] || ''}{getSelectedUser()?.lastName?.[0] || ''}
               </div>
               <div className="flex-1">
-                <h3 className="font-bold text-gray-800">
-                  {conversations.find((c) => c.userId === selectedChat)?.firstName}{" "}
-                  {conversations.find((c) => c.userId === selectedChat)?.lastName}
-                </h3>
+                <h3 className="font-bold text-gray-800">{getSelectedUser()?.firstName} {getSelectedUser()?.lastName}</h3>
                 <p className="text-sm text-green-600 font-medium">Online now</p>
               </div>
             </div>
@@ -190,22 +168,16 @@ export default function MessagesPage() {
               {loadingMessages ? (
                 <p className="text-center text-gray-500">Loading messages...</p>
               ) : messages.length === 0 ? (
-                <p className="text-center text-gray-500">No messages yet</p>
+                <p className="text-center text-gray-500">No messages yet. Start the conversation!</p>
               ) : (
                 messages.map((msg: Message) => (
                   <div key={msg.id} className={`flex ${msg.isMe ? "justify-end" : "justify-start"}`}>
                     <div className="max-w-[70%]">
-                      {!msg.isMe && <div className="text-sm text-gray-500 mb-1 ml-1">{msg.sender}</div>}
-                      <div
-                        className={`rounded-2xl px-4 py-3 ${
-                          msg.isMe
-                            ? "bg-green-600 text-white rounded-br-none"
-                            : "bg-white border border-gray-200 rounded-bl-none"
-                        }`}
-                      >
+                      <div className={`rounded-2xl px-4 py-3 ${msg.isMe ? "bg-green-600 text-white rounded-br-none" : "bg-white border border-gray-200 rounded-bl-none"}`}>
                         <p>{msg.text}</p>
                         <p className={`text-xs mt-2 ${msg.isMe ? "text-green-100" : "text-gray-500"}`}>
                           {formatTime(msg.time)}
+                          {msg.isMe && msg.read && <span className="ml-2">✓✓</span>}
                         </p>
                       </div>
                     </div>
@@ -220,8 +192,8 @@ export default function MessagesPage() {
               <input
                 type="text"
                 value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
+                onChange={e => setNewMessage(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && handleSendMessage()}
                 placeholder="Type your message..."
                 className="flex-1 border rounded-xl px-4 py-3 focus:outline-none focus:ring-2 focus:ring-green-500"
               />

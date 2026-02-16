@@ -1,24 +1,26 @@
 import API from "../utils/api";
-
+import { Conversation } from "../types/conversation";
+import { Message } from "../types/message";
 /* =========================
    Get Conversations
 ========================= */
-export const getUserConversations = async () => {
+export const getUserConversations = async (): Promise<Conversation[]> => {
   const res = await API.get("/messages");
   return res.data.conversations;
 };
 
+
 /* =========================
    Get Messages with Operator
 ========================= */
-export const getUserMessages = async (
-  operatorId: string
-) => {
-  const res = await API.get(
+export const getUserMessages = async (operatorId: string): Promise<Message[]> => {
+  if (!operatorId) throw new Error("operatorId is required");
+  const res = await API.get<{ success: boolean; messages: Message[] }>(
     `/messages/conversation/${operatorId}`
   );
   return res.data.messages;
 };
+
 
 /* =========================
    Send Message
