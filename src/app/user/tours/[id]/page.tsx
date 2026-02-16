@@ -6,6 +6,9 @@ import { tourAPI } from "../../../../services/tour";
 import { Tour } from "../../../../types/tour";
 import { FiMapPin, FiCalendar, FiUsers, FiMessageCircle } from "react-icons/fi";
 
+// ✅ Import the review components
+import ReviewSection from "../../../components/review/ReviewSection";
+
 export default function TourDetailPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -62,12 +65,11 @@ export default function TourDetailPage() {
 
   // Navigate to chat with operator
   const handleMessage = () => {
-  if (!tour?.createdBy?._id) return;
+    if (!tour?.createdBy?._id) return;
 
-  // Use query param to match UserChatPage
-  router.push(`/user/chat?operatorId=${tour.createdBy._id}`);
-};
-
+    // Use query param to match UserChatPage
+    router.push(`/user/chat?operatorId=${tour.createdBy._id}`);
+  };
 
   // Navigate to Booking Page
   const handleBooking = () => {
@@ -86,7 +88,6 @@ export default function TourDetailPage() {
     router.push(`/user/bookings/create?tourId=${tour?._id}&date=${selectedDate}&people=${people}`);
   };
 
-
   if (loading) return <p className="text-center mt-10">Loading...</p>;
   if (!tour) return <p className="text-center mt-10">Tour not found</p>;
 
@@ -103,7 +104,7 @@ export default function TourDetailPage() {
 
       {/* Layout */}
       <div className="grid lg:grid-cols-3 gap-10">
-        {/* LEFT */}
+        {/* LEFT — Tour Info */}
         <div className="lg:col-span-2">
           <h1 className="text-3xl font-bold mb-2">{tour.title}</h1>
 
@@ -161,9 +162,14 @@ export default function TourDetailPage() {
               </ul>
             </div>
           </div>
+
+          {/* ✅ Reviews Section */}
+          <div className="mb-10">
+            <ReviewSection tourId={tour._id} />
+          </div>
         </div>
 
-        {/* RIGHT — BOOKING */}
+        {/* RIGHT — Booking */}
         <div>
           <div className="border rounded-2xl p-6 shadow-lg sticky top-24">
             <h2 className="text-2xl font-bold mb-4">
@@ -226,9 +232,7 @@ export default function TourDetailPage() {
               Request Booking
             </button>
 
-
             <p className="text-xs text-gray-500 text-center mt-3">Free cancellation available</p>
-
           </div>
         </div>
       </div>

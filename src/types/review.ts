@@ -21,6 +21,7 @@ export interface Review {
   createdAt: string;
   updatedAt: string;
 }
+
 export interface OperatorReview {
   _id: string;
   rating: number;
@@ -28,14 +29,17 @@ export interface OperatorReview {
   createdAt: string;
 
   userId: {
+    _id?: string;
     firstName: string;
     lastName: string;
     email: string;
   };
 
   tourId: {
+    _id?: string;
     title: string;
-    location: string;
+    location?: string;
+    price?: number;
   };
 }
 
@@ -45,7 +49,16 @@ export interface OperatorReviewStats {
   complaintsCount: number;
 }
 
+// Export this for your service
 export interface OperatorReviewResponse {
   stats: OperatorReviewStats;
   reviews: OperatorReview[];
+}
+
+// Optional: Admin
+export interface AdminReviewsResponse {
+  reviews: Review[];
+  totalReviews: number;
+  averageRating: number;
+  ratingDistribution: { _id: number; count: number }[];
 }

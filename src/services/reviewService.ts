@@ -1,41 +1,10 @@
-import axios from "axios";
-import { OperatorReviewResponse } from "../types/review";
+import { Review, AdminReviewsResponse, OperatorReviewResponse } from "../types/review";
 import api from "../utils/api";
-export interface Review {
-  _id: string;
-  rating: number;
-  comment: string;
-  tourId?: {
-    _id: string;
-    title: string;
-    location?: string;
-    price?: number;
-  } | null;
-  userId?: {
-    _id: string;
-    firstName: string;
-    lastName: string;
-    email: string;
-  } | null;
-  createdAt: string;
-  updatedAt: string;
-}
-
-export interface ReviewStats {
-  totalReviews: number;
-  averageRating: number;
-  ratingDistribution: { _id: number; count: number }[];
-}
-
-export interface AdminReviewsResponse {
-  reviews: Review[];
-  totalReviews: number;
-  averageRating: number;
-  ratingDistribution: { _id: number; count: number }[];
-}
+import axios from "axios";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
+// -------------------- ADMIN --------------------
 export const getAdminReviews = async (): Promise<AdminReviewsResponse> => {
   const token = localStorage.getItem("adminToken");
   const { data } = await axios.get<AdminReviewsResponse>(`${API_URL}/admin/reviews`, {
@@ -51,8 +20,40 @@ export const deleteAdminReview = async (id: string): Promise<void> => {
   });
 };
 
-//operator 
+// -------------------- OPERATOR --------------------
 export const getOperatorReviews = async (): Promise<OperatorReviewResponse> => {
-  const res = await api.get("/reviews/operator/reviews");
+  const { data } = await api.get<OperatorReviewResponse>("/reviews/operator/reviews");
+  return data;
+};
+
+// -------------------- USER --------------------
+export const getTourReviews = async (tourId: string): Promise<Review[]> => {
+  const { data } = await api.get<{ reviews: Review[] }>(`/reviews/tour/${tourId}`);
+  return data.reviews;
+};
+
+export const createReview = async ({
+  tourId,
+  rating,
+  comment,
+}: {
+  tourId: string;
+  rating: number;
+  comment: string;
+}) => {
+  const res = await api.post("/reviews", { tourId, rating, comment });
   return res.data;
+};
+
+export const updateReview = async (
+  reviewId: string,
+  rating?: number,
+  comment?: string
+): Promise<Review> => {
+  const { data } = await api.put<{ review: Review }>(`/reviews/${reviewId}`, { rating, comment });
+  return data.review;
+};
+
+export const deleteReview = async (reviewId: string): Promise<void> => {
+  await api.delete(`/reviews/${reviewId}`);
 };
