@@ -20,6 +20,7 @@ export default function OperatorBookings() {
   const [filter, setFilter] = useState("all");
   const [search, setSearch] = useState("");
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
+  const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
   useEffect(() => {
     fetchBookings();
@@ -37,31 +38,41 @@ export default function OperatorBookings() {
     }
   };
 
+
   const handleUpdateStatus = async (
-  bookingId: string,
-  status: "accepted" | "rejected" | "cancelled" // <-- add "cancelled"
-) => {
-  try {
-    const updatedBooking = await updateBookingStatus(bookingId, status);
-
-    // Update local state
-    setBookings((prev) =>
-      prev.map((b) =>
-        b._id === bookingId ? { ...b, status: updatedBooking.status } : b
-      )
-    );
-
-    if (selectedBooking?._id === bookingId) {
-      setSelectedBooking({ ...selectedBooking, status: updatedBooking.status });
+    bookingId: string,
+    status: "accepted" | "rejected" | "cancelled"
+  ) => {
+    if (!bookingId) {
+      setStatusMessage({ type: "error", text: "Invalid booking ID" });
+      return;
     }
-  } catch (error: any) {
-    console.error("Error updating booking:", error);
 
-    // Show backend message if available
-    const msg = error.response?.data?.message || "Failed to update booking status";
-    alert(msg);
-  }
-};
+    try {
+      const updatedBooking = await updateBookingStatus(bookingId, status);
+
+      // Update local state
+      setBookings((prev) =>
+        prev.map((b) =>
+          b._id === bookingId ? { ...b, status: updatedBooking.status } : b
+        )
+      );
+
+      if (selectedBooking?._id === bookingId) {
+        setSelectedBooking({ ...selectedBooking, status: updatedBooking.status });
+      }
+
+      setStatusMessage({ type: "success", text: `Booking ${status} successfully! ✅` });
+    } catch (error: any) {
+      console.error("Error updating booking:", error);
+
+      const msg =
+        error.response?.data?.message ||
+        `Booking not found or invalid request (ID: ${bookingId})`;
+      setStatusMessage({ type: "error", text: msg });
+    }
+  };
+
 
 
   const filteredBookings = bookings.filter((booking) => {
@@ -141,6 +152,23 @@ export default function OperatorBookings() {
           </button>
         </div>
       </div>
+      {/* STATUS MODAL */}
+      {statusMessage && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-lg max-w-sm w-full p-6 text-center">
+            <h3 className={`text-lg font-semibold mb-2 ${statusMessage.type === 'success' ? 'text-green-600' : 'text-red-600'}`}>
+              {statusMessage.type === 'success' ? 'Success' : 'Error'}
+            </h3>
+            <p className="text-gray-700 mb-4">{statusMessage.text}</p>
+            <button
+              onClick={() => setStatusMessage(null)}
+              className={`px-6 py-2 rounded-lg font-medium ${statusMessage.type === 'success' ? 'bg-green-600 text-white hover:bg-green-700' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* STATS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -209,8 +237,8 @@ export default function OperatorBookings() {
                 key={option.value}
                 onClick={() => setFilter(option.value)}
                 className={`px-4 py-2.5 rounded-lg text-sm font-medium whitespace-nowrap ${filter === option.value
-                    ? "bg-green-600 text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  ? "bg-green-600 text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
               >
                 {option.label}
@@ -308,44 +336,43 @@ export default function OperatorBookings() {
                       </td>
 
                       {/* Manage Status */}
-<td className="px-6 py-4">
-  {booking.status === "pending" ? (
-    <div className="flex gap-2">
-      <button
-        onClick={async () => {
-          try {
-            await handleUpdateStatus(booking._id, "accepted");
-          } catch {
-            alert("Failed to update status");
-          }
-        }}
-        className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
-      >
-        Accept
-      </button>
-      <button
-        onClick={async () => {
-          try {
-            await handleUpdateStatus(booking._id, "rejected");
-          } catch {
-            alert("Failed to update status");
-          }
-        }}
-        className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200"
-      >
-        Reject
-      </button>
-    </div>
-  ) : (
-    <span
-      className={`px-4 py-2 rounded-lg text-sm font-medium ${
-        booking.status === "accepted" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-      }`}
-    >
-      {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-    </span>
-  )}
-</td>
+                      <td className="px-6 py-4">
+                        {booking.status === "pending" ? (
+                          <div className="flex gap-2">
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await handleUpdateStatus(booking._id, "accepted");
+                                } catch {
+                                  alert("Failed to update status");
+                                }
+                              }}
+                              className="px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700"
+                            >
+                              Accept
+                            </button>
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await handleUpdateStatus(booking._id, "rejected");
+                                } catch {
+                                  alert("Failed to update status");
+                                }
+                              }}
+                              className="px-4 py-2 bg-red-100 text-red-700 rounded-lg text-sm font-medium hover:bg-red-200"
+                            >
+                              Reject
+                            </button>
+                          </div>
+                        ) : (
+                          <span
+                            className={`px-4 py-2 rounded-lg text-sm font-medium ${booking.status === "accepted" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+                              }`}
+                          >
+                            {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
+                          </span>
+                        )}
+                      </td>
 
 
 

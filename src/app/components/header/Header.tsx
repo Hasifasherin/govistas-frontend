@@ -3,12 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import {
-  FiUser,
-  FiChevronDown,
-  FiHeart,
-  FiHelpCircle,
-} from "react-icons/fi";
+import { FiUser, FiChevronDown, FiHeart, FiHelpCircle, FiCalendar } from "react-icons/fi";
 import { useAuth } from "../../context/AuthContext";
 
 // ✅ Redux
@@ -116,8 +111,6 @@ export default function Header() {
         {/* ---------------- RIGHT ---------------- */}
         <div className="flex items-center gap-4 ml-auto">
 
-          
-
           {/* 👤 User Dropdown */}
           <div ref={userRef} className="relative">
             <button
@@ -164,6 +157,14 @@ export default function Header() {
                   className="flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100"
                 >
                   <FiHeart /> Wishlists
+                </Link>
+
+                {/* ✅ My Bookings */}
+                <Link
+                  href="/user/bookings"
+                  className="flex items-center gap-2 px-4 py-2 text-gray-800 hover:bg-gray-100"
+                >
+                  <FiCalendar /> My Bookings
                 </Link>
 
                 <Link

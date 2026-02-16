@@ -10,21 +10,26 @@ export default function TourDetailPage() {
   const { id } = useParams();
   const router = useRouter();
 
+  // Ensure tourId is always a string
+  const tourId = Array.isArray(id) ? id[0] : id;
+
   const [tour, setTour] = useState<Tour | null>(null);
   const [loading, setLoading] = useState(true);
+  const [dateError, setDateError] = useState("");
 
   const [people, setPeople] = useState(1);
   const [selectedDate, setSelectedDate] = useState("");
 
-  // Availability State
-  const [availability, setAvailability] = useState<any>(null);
+  // Availability state
+  const [availability, setAvailability] = useState<{ available: boolean; availableSlots: number } | null>(null);
   const [checkingAvailability, setCheckingAvailability] = useState(false);
 
   // Fetch Tour
   useEffect(() => {
     const fetchTour = async () => {
+      if (!tourId) return;
       try {
-        const res = await tourAPI.getTour(id as string);
+        const res = await tourAPI.getTour(tourId);
         setTour(res.data.tour);
       } catch (err) {
         console.error(err);
@@ -32,52 +37,52 @@ export default function TourDetailPage() {
         setLoading(false);
       }
     };
+    fetchTour();
+  }, [tourId]);
 
-    if (id) fetchTour();
-  }, [id]);
-
-  // Check Availability When Date Changes
+  // Check availability whenever date changes
   useEffect(() => {
     const checkAvailability = async () => {
-      if (!selectedDate || !id) return;
+      if (!selectedDate || !tourId) return;
 
       try {
         setCheckingAvailability(true);
-        const res = await tourAPI.checkAvailability(id as string, selectedDate);
+        const res = await tourAPI.checkAvailability(tourId, selectedDate);
         setAvailability(res.data);
       } catch (err) {
         console.error(err);
+        setAvailability({ available: false, availableSlots: 0 });
       } finally {
         setCheckingAvailability(false);
       }
     };
 
     checkAvailability();
-  }, [selectedDate, id]);
+  }, [selectedDate, tourId]);
 
-  // Send Message → directly navigate to chat with operator
+  // Navigate to chat with operator
   const handleMessage = () => {
     if (!tour?.createdBy?._id) return;
-
     router.push(`/user/chat/${tour.createdBy._id}`);
   };
 
-  // Booking
+  // Navigate to Booking Page
   const handleBooking = () => {
     if (!selectedDate) {
-      alert("Please select a date");
+      setDateError("Please select a date");
       return;
     }
 
     if (availability && people > availability.availableSlots) {
-      alert("Selected people exceeds available slots");
+      setDateError("Selected people exceeds available slots");
       return;
     }
 
-    router.push(
-      `/bookings/create?tourId=${tour?._id}&date=${selectedDate}&people=${people}`
-    );
+    // Clear error before navigating
+    setDateError("");
+    router.push(`/user/bookings/create?tourId=${tour?._id}&date=${selectedDate}&people=${people}`);
   };
+
 
   if (loading) return <p className="text-center mt-10">Loading...</p>;
   if (!tour) return <p className="text-center mt-10">Tour not found</p>;
@@ -201,18 +206,26 @@ export default function TourDetailPage() {
                   </option>
                 ))}
               </select>
+
               {checkingAvailability && <p className="text-xs text-gray-500 mt-1">Checking availability...</p>}
-              {availability && !availability.available && <p className="text-xs text-red-500 mt-1">Fully booked on this date</p>}
+              {availability && !availability.available && (
+                <p className="text-xs text-red-500 mt-1">Fully booked on this date</p>
+              )}
+
+              {/* Error message if no date selected */}
+              {dateError && <p className="text-xs text-red-500 mt-1">{dateError}</p>}
             </div>
 
             <button
               onClick={handleBooking}
-              disabled={availability && !availability.available}
-              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 disabled:bg-gray-400"
+              className="w-full bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700"
             >
               Request Booking
             </button>
+
+
             <p className="text-xs text-gray-500 text-center mt-3">Free cancellation available</p>
+
           </div>
         </div>
       </div>
