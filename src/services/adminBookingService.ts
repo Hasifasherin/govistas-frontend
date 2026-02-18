@@ -1,6 +1,7 @@
+// frontend/services/bookingService.ts
 import { apiRequest } from "../utils/api";
 import { AdminBooking, Booking } from "../types/booking";
-import api from "../utils/api";
+
 // ================== ADMIN BOOKINGS ==================
 
 // Get all admin bookings for a specific month
@@ -23,18 +24,6 @@ export const getOperatorBookings = async (): Promise<Booking[]> => {
   return data.bookings;
 };
 
-
-// Update booking status (Accept / Reject / Cancel)
-
-export const updateBookingStatus = async (
-  bookingId: string,
-  status: "accepted" | "rejected"
-) => {
-  const res = await api.put(`/bookings/${bookingId}/status`, { status });
-  return res.data.booking; 
-};
-
-
 // Get specific booking details
 export const getBookingById = async (bookingId: string): Promise<Booking> => {
   const data = await apiRequest<{ booking: Booking }>(
@@ -44,9 +33,22 @@ export const getBookingById = async (bookingId: string): Promise<Booking> => {
   return data.booking;
 };
 
+// Update booking status (Accept / Reject)
+export const updateBookingStatus = async (
+  bookingId: string,
+  status: "accepted" | "rejected"
+): Promise<Booking> => {
+  const data = await apiRequest<{ booking: Booking }>(
+    "PUT",
+    `/operator/bookings/${bookingId}/status`,
+    { status }
+  );
+  return data.booking;
+};
+
 // ================== PAYMENT ==================
 
-// Update payment status for a booking
+// Update payment status for a booking (operator/admin)
 export const updateBookingPaymentStatus = async (
   bookingId: string,
   paymentStatus: "unpaid" | "paid" | "refunded"
@@ -59,11 +61,11 @@ export const updateBookingPaymentStatus = async (
   return data.booking;
 };
 
-// Confirm payment for a booking (calls backend API route)
+// Confirm payment for a booking (calls backend Express route)
 export const confirmBookingPayment = async (bookingId: string): Promise<Booking> => {
   const data = await apiRequest<{ booking: Booking }>(
     "POST",
-    `/api/payments/confirm/${bookingId}` // frontend API route
+    `/payments/confirm/${bookingId}` // ✅ backend route
   );
   return data.booking;
 };
