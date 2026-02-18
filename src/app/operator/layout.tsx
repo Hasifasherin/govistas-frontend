@@ -15,7 +15,6 @@ import {
   FiMenu,
   FiTrendingUp,
   FiSettings,
-  FiPlus,
   FiChevronRight,
   FiDollarSign,
   FiUsers
@@ -80,8 +79,6 @@ export default function OperatorLayout({ children }: { children: ReactNode }) {
     { label: "Earnings", href: "/operator/earnings", icon: FiTrendingUp },
     { label: "Messages", href: "/operator/messages", icon: FiMessageSquare },
     { label: "Reviews", href: "/operator/reviews", icon: FiMessageSquare },
-    {label: "Notifications", href:"/operator/notifications",icon:FiBell},
-    { label: "Settings", href: "/operator/settings", icon: FiSettings },
   ];
 
   const handleLogout = () => {

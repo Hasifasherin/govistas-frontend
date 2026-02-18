@@ -26,7 +26,7 @@ export default function LoginPage() {
     try {
       const user = await login(form.email, form.password);
 
-      //  Redirect based on role safely
+      // Redirect based on role safely
       switch (user.role) {
         case "user":
           router.push("/");
@@ -58,8 +58,21 @@ export default function LoginPage() {
     >
       <AuthCard title="Welcome Back" subtitle="Login to your Govista account">
         <form onSubmit={handleSubmit} style={{ display: "grid", gap: "16px" }}>
-          <AuthInput label="Email" name="email" value={form.email} onChange={handleChange} />
-          <AuthInput label="Password" name="password" type="password" value={form.password} onChange={handleChange} />
+          <AuthInput
+            label="Email"
+            name="email"
+            value={form.email}
+            onChange={handleChange}
+            disabled={loading}
+          />
+          <AuthInput
+            label="Password"
+            name="password"
+            type="password"
+            value={form.password}
+            onChange={handleChange}
+            disabled={loading}
+          />
 
           {error && (
             <p style={{ color: "#DC2626", fontSize: "14px", textAlign: "center" }}>
@@ -84,6 +97,15 @@ export default function LoginPage() {
             {loading ? "Logging in..." : "Login"}
           </button>
         </form>
+
+        <div style={{ marginTop: "12px", textAlign: "center" }}>
+          <Link
+            href="/auth/forgot-password"
+            style={{ color: "var(--green-primary)", fontWeight: 600, fontSize: "14px" }}
+          >
+            Forgot Password?
+          </Link>
+        </div>
 
         <p style={{ marginTop: "16px", textAlign: "center", color: "#6B7280" }}>
           Don’t have an account?{" "}

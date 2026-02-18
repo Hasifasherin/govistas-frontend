@@ -49,7 +49,7 @@ export default function OperatorBookings() {
     }
 
     try {
-      const updatedBooking = await updateBookingStatus(bookingId, status);
+      const updatedBooking = await updateBookingStatus(bookingId,"accepted");
 
       // Update local state
       setBookings((prev) =>

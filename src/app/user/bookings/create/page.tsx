@@ -2,8 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { apiRequest } from "../../../../utils/api";
 import { Tour } from "../../../../types/tour";
+import { apiRequest } from "../../../../utils/api";
 import { FiCalendar, FiUsers, FiMapPin } from "react-icons/fi";
 
 export default function CreateBookingPage() {
@@ -16,16 +16,19 @@ export default function CreateBookingPage() {
 
   const [tour, setTour] = useState<Tour | null>(null);
   const [loading, setLoading] = useState(true);
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [dateError, setDateError] = useState(""); // Show error if no date selected
+  const [bookingLoading, setBookingLoading] = useState(false);
+  const [dateError, setDateError] = useState("");
 
-  // Fetch tour details
+  // ---------------- FETCH TOUR ----------------
   useEffect(() => {
     const fetchTour = async () => {
       if (!tourId) return;
 
       try {
-        const res = await apiRequest<{ tour: Tour }>("GET", `/tours/${tourId}`);
+        const res = await apiRequest<{ tour: Tour }>(
+          "GET",
+          `/tours/${tourId}`
+        );
         setTour(res.tour);
       } catch (err) {
         console.error("Failed to fetch tour:", err);
@@ -39,46 +42,51 @@ export default function CreateBookingPage() {
 
   const totalPrice = (tour?.price ?? 0) * people;
 
-  // Handle payment
-  const handlePayment = async () => {
+  // ---------------- CREATE BOOKING ONLY ----------------
+  const handleBooking = async () => {
     if (!tour) return;
 
     if (!selectedDate) {
-      setDateError("Please select a date before payment");
+      setDateError("Please select a date before booking");
       return;
     } else {
       setDateError("");
     }
 
     try {
-      setPaymentLoading(true);
+      setBookingLoading(true);
 
-      // Make payment request to backend
-      const paymentResponse = await apiRequest<{ paymentIntentId: string }>(
+      // 1️⃣ Create booking (status = pending)
+      const bookingRes = await apiRequest<{ booking: { _id: string } }>(
         "POST",
-        "/payments/user",
+        "/bookings",
         {
           tourId: tour._id,
-          date: selectedDate,
+          travelDate: selectedDate,
           participants: people,
-          amount: totalPrice,
         }
       );
 
-      console.log("Payment Response:", paymentResponse);
-      alert("Payment successful!");
+      const newBookingId = bookingRes.booking._id;
 
-      router.push("/user/bookings"); // redirect to user's bookings
+      alert("Booking request sent! Waiting for operator approval.");
+
+      // 2️⃣ Redirect to booking details page
+      router.push(`/user/bookings/${newBookingId}`);
     } catch (err: any) {
-      console.error("Payment failed:", err);
-      alert(err.response?.data?.message || "Payment failed. Please try again.");
+      console.error("Booking failed:", err);
+      alert(err.response?.data?.message || "Booking failed. Please try again.");
     } finally {
-      setPaymentLoading(false);
+      setBookingLoading(false);
     }
   };
 
-  if (loading) return <p className="text-center mt-10">Loading booking details...</p>;
-  if (!tour) return <p className="text-center mt-10">Tour not found</p>;
+  // ---------------- UI ----------------
+  if (loading)
+    return <p className="text-center mt-10">Loading booking details...</p>;
+
+  if (!tour)
+    return <p className="text-center mt-10">Tour not found</p>;
 
   return (
     <div className="max-w-6xl mx-auto px-6 lg:px-8 py-20 space-y-12 font-sans">
@@ -88,22 +96,42 @@ export default function CreateBookingPage() {
         <h2 className="text-xl font-semibold">{tour.title}</h2>
 
         <div className="flex items-center gap-4 text-gray-600">
-          <FiCalendar /> {selectedDate ? new Date(selectedDate).toLocaleDateString() : "No date selected"}
-          <FiUsers /> {people} {people > 1 ? "people" : "person"}
-          <FiMapPin /> {tour.location}
+          <span className="flex items-center gap-1">
+            <FiCalendar />
+            {selectedDate
+              ? new Date(selectedDate).toLocaleDateString()
+              : "No date selected"}
+          </span>
+
+          <span className="flex items-center gap-1">
+            <FiUsers />
+            {people} {people > 1 ? "people" : "person"}
+          </span>
+
+          <span className="flex items-center gap-1">
+            <FiMapPin />
+            {tour.location}
+          </span>
         </div>
 
-        <p className="text-gray-600">Price per person: ${tour.price}</p>
-        <p className="text-gray-600">Total: ${totalPrice}</p>
+        <p className="text-gray-600">
+          Price per person: ${tour.price}
+        </p>
 
-        {dateError && <p className="text-red-500 text-sm">{dateError}</p>}
+        <p className="text-gray-800 font-semibold">
+          Total: ${totalPrice}
+        </p>
+
+        {dateError && (
+          <p className="text-red-500 text-sm">{dateError}</p>
+        )}
 
         <button
-          onClick={handlePayment}
-          disabled={paymentLoading}
-          className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 disabled:bg-gray-400"
+          onClick={handleBooking}
+          disabled={bookingLoading}
+          className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 transition"
         >
-          {paymentLoading ? "Processing..." : "Pay & Confirm Booking"}
+          {bookingLoading ? "Processing..." : "Request Booking"}
         </button>
       </div>
     </div>

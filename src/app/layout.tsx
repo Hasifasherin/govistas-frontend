@@ -6,7 +6,13 @@ import Footer from "./components/footer/Footer";
 import { AuthProvider } from "./context/AuthContext";
 import { Provider } from "react-redux";
 import { store } from "../redux/store";
+import { Elements } from "@stripe/react-stripe-js";
+import { loadStripe } from "@stripe/stripe-js";
 import "./globals.css";
+
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!
+);
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -21,22 +27,23 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const isAdminOrOperatorRoute =
     pathname.startsWith("/admin") || pathname.startsWith("/operator");
 
-  const shouldShowHeader = !hideHeaderRoutes.includes(pathname) && !isAdminOrOperatorRoute;
+  const shouldShowHeader =
+    !hideHeaderRoutes.includes(pathname) && !isAdminOrOperatorRoute;
 
   return (
     <html lang="en">
       <body className="font-sans">
         <Provider store={store}>
           <AuthProvider>
-            {shouldShowHeader && <Header />}
+            <Elements stripe={stripePromise}>
+              {shouldShowHeader && <Header />}
 
-            {/* Add padding-top to prevent overlapping */}
-            <div className={shouldShowHeader ? "pt-[80px]" : ""}>
-              {children}
-            </div>
+              <div className={shouldShowHeader ? "pt-[80px]" : ""}>
+                {children}
+              </div>
 
-            {/* Only show footer if header is visible */}
-            {shouldShowHeader && <Footer />}
+              {shouldShowHeader && <Footer />}
+            </Elements>
           </AuthProvider>
         </Provider>
       </body>

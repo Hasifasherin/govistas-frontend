@@ -7,10 +7,6 @@ import { OperatorTour } from "../../../types/operator";
 import {
   FiX,
   FiUpload,
-  FiMapPin,
-  FiDollarSign,
-  FiUsers,
-  FiCalendar,
 } from "react-icons/fi";
 
 interface AddTourFormProps {
@@ -48,7 +44,6 @@ export default function AddTourForm({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
-  // ---------------- PREFILL EDIT DATA ----------------
   useEffect(() => {
     if (!editingTour) return;
 
@@ -71,7 +66,6 @@ export default function AddTourForm({
     });
   }, [editingTour]);
 
-  // ---------------- LOAD CATEGORIES ----------------
   useEffect(() => {
     if (!token) return;
 
@@ -87,7 +81,6 @@ export default function AddTourForm({
     fetchCategories();
   }, [token]);
 
-  // ---------------- HANDLE CHANGE ----------------
   const onChange = (
     e: React.ChangeEvent<
       HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement
@@ -102,7 +95,6 @@ export default function AddTourForm({
     }
   };
 
-  // ---------------- SUBMIT ----------------
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -197,24 +189,25 @@ export default function AddTourForm({
     }
   };
 
-  // ---------------- UI ----------------
   return (
-    <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-      <div className="w-full max-w-2xl bg-white rounded-2xl shadow-xl">
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+      <div className="w-full max-w-2xl bg-white rounded-3xl shadow-2xl overflow-hidden border border-gray-100">
         {/* HEADER */}
-        <div className="flex items-center justify-between px-6 py-4 border-b">
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-200 bg-gradient-to-r from-green-100 to-green-50">
           <div>
-            <h2 className="text-xl font-semibold">
+            <h2 className="text-2xl font-bold text-gray-900">
               {editingTour ? "Edit Tour" : "Create New Tour"}
             </h2>
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-gray-600 mt-1">
               {editingTour
                 ? "Update your tour package details"
                 : "Add a new tour package for customers"}
             </p>
           </div>
-          <button onClick={onClose}>
-            <FiX size={22} />
+          <button
+            onClick={onClose}
+            className="text-gray-500 hover:text-gray-700 transition-all duration-200">
+            <FiX size={24} />
           </button>
         </div>
 
@@ -231,21 +224,22 @@ export default function AddTourForm({
               placeholder="Maldives Island Paradise Tour"
               value={form.title}
               onChange={onChange}
-              className="input"
+              className="input shadow-sm hover:shadow-md transition-all"
             />
           </div>
 
           {/* LOCATION */}
           <div>
             <label className="label">Location *</label>
-            <div className="relative">
-              <FiMapPin className="icon" />
+            <div className="relative flex items-center">
+              <div className="absolute left-0 h-full flex items-center pl-3"> 
+              </div>
               <input
                 name="location"
                 placeholder="Maldives"
                 value={form.location}
                 onChange={onChange}
-                className="input pl-10"
+                className="input pl-14 shadow-sm hover:shadow-md transition-all"
               />
             </div>
           </div>
@@ -257,8 +251,7 @@ export default function AddTourForm({
               name="categoryId"
               value={form.categoryId}
               onChange={onChange}
-              className="input"
-            >
+              className="input shadow-sm hover:shadow-md transition-all">
               <option value="">Select Category</option>
               {categories.map((c) => (
                 <option key={c._id} value={c._id}>
@@ -271,15 +264,16 @@ export default function AddTourForm({
           {/* PRICE */}
           <div>
             <label className="label">Price ($) *</label>
-            <div className="relative">
-              <FiDollarSign className="icon" />
+            <div className="relative flex items-center">
+              <div className="absolute left-0 h-full flex items-center pl-3">
+              </div>
               <input
                 name="price"
                 type="number"
                 placeholder="1500"
                 value={form.price}
                 onChange={onChange}
-                className="input pl-10"
+                className="input pl-14 shadow-sm hover:shadow-md transition-all"
               />
             </div>
           </div>
@@ -293,22 +287,23 @@ export default function AddTourForm({
               placeholder="5"
               value={form.duration}
               onChange={onChange}
-              className="input"
+              className="input shadow-sm hover:shadow-md transition-all"
             />
           </div>
 
           {/* MAX GROUP */}
           <div>
             <label className="label">Max Group *</label>
-            <div className="relative">
-              <FiUsers className="icon" />
+            <div className="relative flex items-center">
+              <div className="absolute left-0 h-full flex items-center pl-3">
+              </div>
               <input
                 name="maxGroupSize"
                 type="number"
                 placeholder="10"
                 value={form.maxGroupSize}
                 onChange={onChange}
-                className="input pl-10"
+                className="input pl-14 shadow-sm hover:shadow-md transition-all"
               />
             </div>
           </div>
@@ -316,14 +311,15 @@ export default function AddTourForm({
           {/* START DATE */}
           <div>
             <label className="label">Start Date</label>
-            <div className="relative">
-              <FiCalendar className="icon" />
+            <div className="relative flex items-center">
+              <div className="absolute left-0 h-full flex items-center pl-3">
+              </div>
               <input
                 type="date"
                 name="startDate"
                 value={form.startDate}
                 onChange={onChange}
-                className="input pl-10 calendar"
+                className="input pl-14 shadow-sm hover:shadow-md transition-all"
               />
             </div>
           </div>
@@ -331,14 +327,15 @@ export default function AddTourForm({
           {/* END DATE */}
           <div>
             <label className="label">End Date</label>
-            <div className="relative">
-              <FiCalendar className="icon" />
+            <div className="relative flex items-center">
+              <div className="absolute left-0 h-full flex items-center pl-3">
+              </div>
               <input
                 type="date"
                 name="endDate"
                 value={form.endDate}
                 onChange={onChange}
-                className="input pl-10 calendar"
+                className="input pl-14 shadow-sm hover:shadow-md transition-all"
               />
             </div>
           </div>
@@ -352,7 +349,7 @@ export default function AddTourForm({
               placeholder="Experience crystal clear waters, luxury resorts, snorkeling..."
               value={form.description}
               onChange={onChange}
-              className="input"
+              className="input resize-none shadow-sm hover:shadow-md transition-all"
             />
           </div>
 
@@ -361,9 +358,9 @@ export default function AddTourForm({
             <label className="label">
               Tour Image {editingTour ? "(optional)" : "*"}
             </label>
-            <label className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center cursor-pointer hover:border-green-500 transition">
-              <FiUpload size={28} className="text-green-600" />
-              <p className="text-sm mt-2">
+            <label className="border-2 border-dashed rounded-xl p-6 flex flex-col items-center cursor-pointer hover:border-green-500 hover:bg-green-50 transition-all shadow-sm hover:shadow-md">
+              <FiUpload size={28} className="text-green-600 mb-2" />
+              <p className="text-sm mt-1 text-gray-600">
                 {imageFile ? imageFile.name : "Upload tour image"}
               </p>
               <input type="file" name="image" onChange={onChange} className="hidden" />
@@ -371,7 +368,7 @@ export default function AddTourForm({
           </div>
 
           {error && (
-            <div className="col-span-2 bg-red-100 text-red-700 p-3 rounded">
+            <div className="col-span-2 bg-red-50 text-red-700 p-3 rounded-md text-sm shadow-inner">
               {error}
             </div>
           )}
@@ -381,7 +378,7 @@ export default function AddTourForm({
             <button
               type="submit"
               disabled={saving}
-              className="flex-1 bg-green-600 text-white py-3 rounded-lg font-medium hover:bg-green-700 transition"
+              className="flex-1 bg-green-600 text-white py-3 rounded-xl font-semibold hover:bg-green-700 transition-all shadow-md hover:shadow-lg"
             >
               {saving
                 ? editingTour
@@ -394,8 +391,7 @@ export default function AddTourForm({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 border border-gray-300 rounded-lg py-3 hover:bg-gray-100"
-            >
+              className="flex-1 border border-gray-300 rounded-xl py-3 hover:bg-gray-50 transition-all shadow-sm hover:shadow-md">
               Cancel
             </button>
           </div>
@@ -407,27 +403,20 @@ export default function AddTourForm({
           font-size: 14px;
           font-weight: 500;
           margin-bottom: 4px;
+          display: block;
         }
         .input {
           width: 100%;
-          padding: 10px 12px;
-          border-radius: 8px;
+          padding: 12px 14px;
+          border-radius: 12px;
           border: 1px solid #d1d5db;
           outline: none;
+          transition: all 0.3s;
+          background-color: #fff;
         }
         .input:focus {
           border-color: #16a34a;
-          box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
-        }
-        .icon {
-          position: absolute;
-          left: 12px;
-          top: 50%;
-          transform: translateY(-50%);
-          color: #6b7280;
-        }
-        .calendar {
-          cursor: pointer;
+          box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
         }
       `}</style>
     </div>

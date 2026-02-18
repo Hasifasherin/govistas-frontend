@@ -6,7 +6,7 @@ import LoginCTA from "./components/homepage/LoginCTA";
 import { useAuth } from "./context/AuthContext";
 import FeaturedTours from "./components/tour/FeaturedTours";
 import CategoryTours from "./components/tour/CategoryTours";
-
+import Destinations from "./components/homepage/Destinations";
 export default function HomePage() {
   const { user, loading } = useAuth();
 
@@ -20,7 +20,8 @@ export default function HomePage() {
 
       {/* Featured Tours */}
       <FeaturedTours />
-
+       {/* Destinations */}
+      <Destinations /> 
       {/* Category-wise Tours */}
       <CategoryTours />
     </main>
